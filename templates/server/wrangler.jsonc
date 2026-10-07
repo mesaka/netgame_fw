@@ -1,0 +1,23 @@
+{
+  // Cloudflare(Workers Builds)で、Web版(build/web)の静的公開と、ネット対戦サーバー(/ws)を動かす設定
+  "name": "mygame",
+  "main": "server/worker.js",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./build/web",
+    // /ws だけ Worker が受け持つ。それ以外は静的ファイルをそのまま返す
+    "run_worker_first": ["/ws"]
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "HUB", "class_name": "Hub" }]
+  },
+  // ブランチのプレビュー(`wrangler preview`)用。Durable Object のバインディングが要る(マイグレーションは上と共通)
+  "previews": {
+    "durable_objects": {
+      "bindings": [{ "name": "HUB", "class_name": "Hub" }]
+    }
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["Hub"] }
+  ]
+}

@@ -76,12 +76,16 @@
 - ブラウザ(pygbag)での ○× の実機確認は、していない(ポコテンのような取り込み先がまだない)。
 - 元の計画(参考): ○×(2人)で、手番・ずれの検出・退出・再戦・結果を確かめる。3人用の見本(数当てなど)は、サーバー側のテストで先に確かめる。
 
-### M6 文書
-- 使い方(アダプターの書き方、pygbag と Cloudflare の設定、フォントの作り方、ポコテンへの取り込み手順 `tools/sync_netgame.sh`)を整える。
+### M6 文書(実装済み。PR で確認中)
+- `docs/getting-started.md`: 新しいゲームに組み込む手順(取り込み・サーバー(Cloudflare の設定、`previews`、マイグレーション)・クライアント・フォント・pygbag で守ること・テストと確認・更新)。`docs/adapter.md` のクライアント側・`docs/ui.md` は M3/M5 で実装に合わせた。
+- 道具: `tools/copy_to_game.sh <ゲーム>`(ゲームへのコピー。ポコテンの `tools/sync_netgame.sh` と同じ結果になることを確認)/ `tools/build_font.py`(使う文字だけの日本語フォントを作る。netgame の文言・入力できる文字・ゲームの文言を入れる)。
+- 雛形: `templates/server/{adapter.js,worker.js,wrangler.jsonc}` / `templates/client/adapter.py`。テストで、そのまま動くことを確かめている(`server/templates.test.js`、`tests/test_tools.py`)。
+- テスト: node 64件 / pytest 95件。
+- 残り: ポコテンに、M5 以降の netgame の変更(`GameAdapter.sess`・`TurnAdapter`・desync/abort の文言)を取り込む(`bash tools/sync_netgame.sh`、フォントの作り直し)。ポコテン側の既存の `tools/build_font.py` を、この共通の道具に置き換えるかは、任意。
 
 ## 3. 取り込み方(ポコテン側)
-- pygbag は、アプリのフォルダ内のファイルだけを梱包する。サブモジュールではなく、**コピー**(`git subtree` または `tools/sync_netgame.sh`)で、`netgame/` に置く。
-- サーバーは、`server/` にコピーし、`wrangler.jsonc` は、テンプレートをもとにする(Durable Object のバインディング・マイグレーション・`previews`・`run_worker_first: ["/ws"]`)。
+- pygbag は、アプリのフォルダ内のファイルだけを梱包する。サブモジュールではなく、**コピー**(`tools/copy_to_game.sh`。ポコテン側には、同じ結果になる `tools/sync_netgame.sh` がある)で、`netgame/` と `server/netgame/` に置く。
+- サーバーは、`wrangler.jsonc` を `templates/server/wrangler.jsonc` をもとにする(Durable Object のバインディング・マイグレーション・`previews`・`run_worker_first: ["/ws"]`)。
 
 ## 4. 完了の条件(M4)
 - ポコテンのネット対戦の、仕様(`SPEC.md` 2.8)に書かれたことが、すべて同じに動く。
