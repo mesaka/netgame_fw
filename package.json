@@ -1,0 +1,10 @@
+{
+  "name": "netgame_fw",
+  "version": "0.1.0",
+  "private": true,
+  "description": "対戦ゲーム用ネットワーク・フレームワーク(サーバー側。クライアントは client/)",
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"server/**/*.test.js\" \"examples/**/*.test.js\""
+  }
+}
