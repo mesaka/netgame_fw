@@ -1,0 +1,8 @@
+{
+  // ローカル確認用: npx wrangler dev -c examples/pokoten/wrangler.jsonc
+  "name": "netgame-example-pokoten",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-01",
+  "durable_objects": { "bindings": [{ "name": "HUB", "class_name": "Hub" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Hub"] }]
+}

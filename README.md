@@ -7,7 +7,13 @@ Pygame / pygbag(ブラウザ)の対戦ゲーム向けに、「接続 → 名前 
 元になったのは、[mesaka/pokoten](https://github.com/mesaka/pokoten) の「ネット対戦」(本番で動作確認済み)。
 ポコテンは、このフレームワークの最初の利用者(アダプター)になる。
 
-状態: **M0(設計・仕様)**。コードはまだない。
+状態: **M1(サーバー)を実装中**(`server/`)。クライアントの核・画面部品は、これから(M2・M3)。
+
+```
+npm test                         # サーバーのテスト(Node 22 以上)
+npx wrangler dev -c examples/pokoten/wrangler.jsonc --port 8787   # ローカルで動かす
+node examples/pokoten/e2e.mjs    # 本物の Workers ランタイムに2人分つないで、通しで確認
+```
 
 ## 2つの対戦方式(どちらもライブラリ化する)
 | 方式 | 想定するゲーム | 同期の仕組み |

@@ -28,7 +28,13 @@
 ### M0 設計と仕様(いまここ)
 - 新リポジトリに、README・設計・プロトコル・アダプターの仕様・移行手順を置く。
 
-### M1 サーバー
+### M1 サーバー(実装済み。PR で確認中)
+- 実装: `server/core.js`(核)・`server/worker.js`(Cloudflare の入口)・`server/text.js`・`server/testkit.js`(テスト用の部品)。
+- ポコテンのアダプター(見本): `examples/pokoten/adapter.js`。`attack` `snap` `over` を、イベントとして登録している。
+- テスト: `server/core.test.js`(共通。realtime・turns・ルーム・3人の部屋)37件 + `examples/pokoten/adapter.test.js`(ポコテン固有)12件。ポコテンの既存の Node テスト(25件)の内容は、共通のものを `core.test.js` に、ポコテン固有のものを `adapter.test.js` に、v1 の通信で移した。
+- 本物の Workers ランタイムでの確認: `examples/pokoten/e2e.mjs`(ランダム・ルーム・準備OK・一時停止・チャット・再戦・退出)。
+- **当初の予定からの変更**: Durable Object は、まだ `Lobby` + `Room` に分けず、**1つの `Hub`** で、組み合わせも部屋も動かす。部屋の記録は DO のストレージ(`ctx.storage.kv`。同期 KV)に置く。部屋ごとに分けるのは、規模が必要になってから(`docs/design.md` 3.3)。
+- 元の計画(参考):
 - `lobby_core.js` を、部屋(`players[]`・席・設定)+ イベント登録 + 結果(`ranks`)の形に一般化する。realtime と turns の両方。
 - ポコテンのアダプター(`attack` `snap` `over`)を書く。**ポコテンの Node テスト(25件)を移して**、同じ結果になることを確かめる。
 - 追加のテスト: 3人の部屋(席・名簿・`ready_state`・一時停止の集合)、turns(手番・`seq`・ハッシュの突き合わせ・`desync`)、イベントの検証と上限。
