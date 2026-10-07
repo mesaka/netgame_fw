@@ -40,7 +40,13 @@
 - 追加のテスト: 3人の部屋(席・名簿・`ready_state`・一時停止の集合)、turns(手番・`seq`・ハッシュの突き合わせ・`desync`)、イベントの検証と上限。
 - Durable Object を、`Lobby` + `Room` に分ける(`worker.js`)。`previews` の設定をテンプレートに入れる。
 
-### M2 クライアントの核
+### M2 クライアントの核(実装済み。PR で確認中)
+- 実装: `client/netgame/` — `protocol.py`(定数・順位の検査)/ `text.py`(`clean_text`・`TextField`・`has_glyph`・`printable`)/ `webbridge.py`(JS の SHIM・`WebInput`・コピー・貼り付け・保存)/ `transport.py`(`WebTransport`・`ThreadTransport`)/ `session.py`(`NetSession`)。
+- `NetSession` は、v1 の通信・席・名簿・順位の形。realtime(`send_event` / `take_events`)と turns(`send_action` / `take_actions` / `send_sync` / `report_finish`)の両方。2人対戦向けの窓口(`opp_name` `opp_ready` `opp_left` `result` など)も用意した。
+- テスト(pytest 35件): `tests/test_session.py`(ポコテンの `test_net.py` の通信・状態のテストを、v1 の形で移した + turns・3人)/ `test_text.py` / `test_webbridge.py`(偽のブラウザ・SHIM を node で動かす `shim_test.cjs`)。
+- 本物の Workers ランタイムでの確認: `examples/pokoten/e2e_client.py`(Python のクライアント + 実際の WebSocket。ランダム・ルーム・準備OK・一時停止・チャット・再戦・退出)。
+- 移行で変えたところ: JS 側の名前を `pkNet` → `ngNet`、`N.open(url, query)` が `?game=…&v=1` を受け取る、PC の接続先の環境変数を `POKOTEN_SERVER` → `NETGAME_SERVER`、`web_prompt`(使っていなかった入力ダイアログ)は持ち込まない。
+- 元の計画(参考):
 - `netplay.py` / `nettransport.py` / `TextField` / `has_glyph` を、`client/netgame/` に移す。`NetSession` を、席・名簿・`ranks` の形にする。realtime と turns の両方。
 - ポコテンの Python テスト(`test_net.py`)のうち、通信・状態に関するものを移す。偽のブラウザ(WebTransport / WebInput)のテストも移す。
 
