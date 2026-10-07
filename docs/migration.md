@@ -58,9 +58,13 @@
 - 変えたところ: 画面の置き場所は、基準 480×800 の座標を中央に置く(`Layout`)。大きい画面でも崩れないが、横長の専用レイアウトはまだない。エラーの文字色を `Theme.error` に分けた。文言の `net_diff`(むずかしさ)は持たず、アダプターの `settings_label()` が返す。
 - 元の計画(参考): `ui.py` の net 系と、`Net` の共通部分を、`NetGameScene` + `ui/` の部品に移す。`Theme` / `Strings` で差し替え可能にする。各状態のスクリーンショットを、ポコテンの現状と見比べる。
 
-### M4 ポコテンを置き換え
-- ポコテンが `netgame/`(コピー)を取り込み、`Net` を `PokotenAdapter` + `NetGameScene` に置き換える。重複したコード(`netplay.py` / `nettransport.py` / `ui.py` の net 系 / `server/`)を消す。
-- 本番と同じ手順(プレビューのブランチ → 2つのブラウザで確認 → `main`)で、動作が同じであることを確認する。
+### M4 ポコテンを置き換え(実装済み。ポコテン PR #2 でマージ。本番のブラウザ確認は待ち)
+- ポコテン(mesaka/pokoten)が `netgame/`・`server/netgame/`(コピー。`tools/sync_netgame.sh`)を取り込み、`Net` を `PokotenAdapter` + `NetGameScene` に置き換えた。残ったポコテン固有の部分: `main.py` の `PokotenAdapter`・`netcodec.py`(盤面の符号化)・`server/adapter.js`(組み合わせ・イベントの検証・決着)。
+- 消えたもの: `netplay.py` / `nettransport.py` / `server/lobby_core.*` / `ui.py` の net 系(盤面と右の列だけ残した)。Durable Object は `Lobby` → `Hub`(`wrangler.jsonc` の migration v2 で旧 `Lobby` を削除)。
+- 確認したこと: ポコテン側 pytest 68件・node 12件。`wrangler dev` で2つの `Net` 場面を本物の WebSocket で対戦させ、マッチ(ブロックの並びの一致)・準備OK・カウントダウン・盤面と岩のやりとり・チャットでの一時停止と再開・勝敗・再戦・退出を通した。Cloudflare のビルド(pygbag を含む)は成功。
+- **未確認**: ブラウザ(pygbag)での実機動作(JS の入力欄・日本語入力・貼り付け・コピー)。プレビュー/本番の2つのブラウザで確認する。
+- 変えたところ: 通信が v1 になったので、旧版のタブは再読み込みが必要。ブラウザの名前の保存キーは、以前と同じ(`pokoten_name`)。
+- 元の計画(参考): ポコテンが `netgame/`(コピー)を取り込み、`Net` を `PokotenAdapter` + `NetGameScene` に置き換える。重複したコードを消す。本番と同じ手順(プレビュー → 2つのブラウザ → `main`)で、動作が同じことを確認する。
 
 ### M5 ターン制の見本
 - ○×(2人)で、手番・ずれの検出・退出・再戦・結果を確かめる。クライアントのテストと、2つの接続を使った通しの確認。
