@@ -50,9 +50,13 @@
 - `netplay.py` / `nettransport.py` / `TextField` / `has_glyph` を、`client/netgame/` に移す。`NetSession` を、席・名簿・`ranks` の形にする。realtime と turns の両方。
 - ポコテンの Python テスト(`test_net.py`)のうち、通信・状態に関するものを移す。偽のブラウザ(WebTransport / WebInput)のテストも移す。
 
-### M3 画面部品
-- `ui.py` の net 系と、`Net` の共通部分を、`NetGameScene` + `ui/` の部品に移す。`Theme` / `Strings` で差し替え可能にする。
-- 画面のスクリーンショットを、各状態(名前・ルーム・テンキー・待機・準備OK・カウントダウン・一時停止・チャット窓・結果・退出)で撮って、ポコテンの現状と見比べる。
+### M3 画面部品(実装済み。PR で確認中)
+- 実装: `client/netgame/flow.py`(`NetGameScene`: 接続 → 名前 → 相手さがし/ルーム(テンキー) → 準備OK → カウントダウン → 対戦 → 結果 → 再戦/退出、チャットと一時停止、ブラウザの入力欄との同期)/ `adapter.py`(ゲーム側が書く `GameAdapter` / `RealtimeAdapter`)/ `ui/`(`theme.py` 色・フォント・背景 / `strings.py` + `strings_ja.py` 文言 / `layout.py` 置き場所 / `widgets.py` ボタン・入力欄・確認・`ClickPad` / `screens.py` 各画面と窓 / `chat.py` 定型文の選び方)。使い方は `docs/ui.md`。
+- ポコテンの `Net`(約 600 行)の流れを、ゲームに依存しない形で移した。盤面を動かす・描く部分だけが、アダプターの `start_match` / `update` / `draw` / `handle` に残る。
+- テスト(pytest 78件のうち 43件): `tests/test_flow.py` — 偽の通信 + 画面なしの pygame で、名前・ルーム(テンキー・キーボード・貼り付け)・準備OK・カウントダウン・チャットの一時停止と再開・確認・決着・再戦・退出・自動退出・ブラウザの入力欄の同期、全画面の描画(480×800 / 960×720 / 1024×900)。
+- ポコテンとの見比べ: `tools/compare_pokoten.py --pokoten <ポコテンの場所>` が、同じデータで描いた**55 の画面・部品が、ピクセル単位で一致する**ことを確かめる(名前・テンキー3種・待機・エラー・チャットの窓4種・右の列のボタン・準備OK・確認。押している状態も)。盤面・得点・相手の小さな盤面・音量ボタンは、ゲーム側(アダプター)の受け持ち。
+- 変えたところ: 画面の置き場所は、基準 480×800 の座標を中央に置く(`Layout`)。大きい画面でも崩れないが、横長の専用レイアウトはまだない。エラーの文字色を `Theme.error` に分けた。文言の `net_diff`(むずかしさ)は持たず、アダプターの `settings_label()` が返す。
+- 元の計画(参考): `ui.py` の net 系と、`Net` の共通部分を、`NetGameScene` + `ui/` の部品に移す。`Theme` / `Strings` で差し替え可能にする。各状態のスクリーンショットを、ポコテンの現状と見比べる。
 
 ### M4 ポコテンを置き換え
 - ポコテンが `netgame/`(コピー)を取り込み、`Net` を `PokotenAdapter` + `NetGameScene` に置き換える。重複したコード(`netplay.py` / `nettransport.py` / `ui.py` の net 系 / `server/`)を消す。

@@ -5,7 +5,7 @@
 
 ## 基本ルール
 - 返答・コメント・UI文字列・文書は日本語。
-- クライアントの核(`client/netgame/` の pygame 非依存の部分)は、pygame を import しない。画面部品(`ui/`)だけが pygame を使う。
+- クライアントの核(`client/netgame/` の pygame 非依存の部分)は、pygame を import しない。pygame を使うのは、画面部品(`ui/`)と `flow.py`(`NetGameScene`)だけ。
 - ブラウザ(pygbag)で動くことが前提: Python の日本語をそのまま JS に渡さない(ASCII の JSON で受け渡す)/ JS 側の名前の先頭を `__` にしない / `websockets` などは文字列の `import_module` で読む / スレッドは PC 版だけ。
 - サーバーの核(`server/*_core.js`)は Cloudflare に依存させない(`node --test` でテストできるように)。
 - 変更したら、テスト(Python: `python -m pytest` / サーバー: `npm test`)を通す。サーバーを変えたら、`examples/pokoten/e2e.mjs`(wrangler dev に接続)でも確かめる。
