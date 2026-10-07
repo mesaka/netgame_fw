@@ -84,6 +84,7 @@ class NetGameScene:
         self.match_seen = 0
         try:
             self.sess = NetSession(self._transport or make_transport(), self.adapter.game_id)
+            self.adapter.sess = self.sess
             self.sess.start("")
         except Exception as e:                  # noqa: BLE001
             print("net:", repr(e))
@@ -590,6 +591,8 @@ class NetGameScene:
             wait = (S["net_wait_rematch"] if s.rematch_sent else
                     S["net_rematch_req"] if s.opp_wants_rematch else None)
             sub = (S["net_opp_left"] if s.opp_left else
+                   S["net_desync"] if s.why == "desync" else
+                   S["net_abort"] if s.why == "abort" else
                    S.fmt("net_idle_warn", n=max(0, int(idle_left) + 1)) if idle_left is not None else wait)
             v.banner = (S[s.result], gold if s.result in ("win", "draw") else red, sub)
             v.banner_top = True

@@ -45,70 +45,70 @@ export default {
 
 ## 2. クライアント側のアダプター(Python)
 
+画面の流れ(名前・ルーム・準備OK・カウントダウン・チャット・結果・退出)は `NetGameScene`(`client/netgame/flow.py`)が受け持つ。ゲーム側は `GameAdapter` を継承して、対戦中の「動かす・描く」だけを書く(M3 で実装した形。`docs/ui.md`)。
+
 ```python
-from netgame import GameAdapter, GameConfig, NetGameScene
+from netgame.adapter import RealtimeAdapter, TurnAdapter    # どちらかを継承する
+from netgame.flow import NetGameScene
 
-class PokotenAdapter(GameAdapter):
-    config = GameConfig(id="pokoten", mode="realtime", min_players=2, max_players=2,
-                        settings=lambda: {"diff": SETTINGS["difficulty"]})
-
-    # --- 流れのフック(共通) ---
-    def on_match(self, ctx):      # ctx.seed / ctx.you / ctx.players / ctx.settings。ゲームの用意をする
-    def on_start(self):           # 全員が準備OK。カウントダウンが終わって、始まった
-    def on_pause(self, paused):   # 一時停止/再開(チャット中)。効果音の停止などに
-    def on_result(self, ranks):   # 結果が決まった(勝ち/負けの効果音など)
-    def on_rematch(self):         # 新しい対戦の準備(on_match の前に呼ばれる)
-
-    # --- 描画(共通。rect はフレームワークが決める) ---
-    def draw_game(self, screen, rect, frame): ...
-    def draw_side(self, screen, rect, frame): ...      # 右の列など(任意)
-    def banner(self, state): ...                       # 帯の文言を上書きしたいとき(任意)
-
-    # --- チャット(任意) ---
-    def chat_templates(self): ...                      # テンプレート(既定は空。文言はゲーム側の strings)
-    def chat_suggest(self, phase, ranks=None): ...     # 場面ごとに選択済みにするテンプレートの添字
+scene = NetGameScene(MyAdapter(), theme=Theme(font=...), strings={"net_title": "..."})
+# 毎フレーム: scene.handle(ev) / r = scene.update()(r == "menu" ならタイトルへ)/ scene.draw(screen)
 ```
 
-### 2.1 realtime のフック
+### 2.1 共通(GameAdapter)
 ```python
-    def update(self, frame):            # 毎フレーム。一時停止・カウントダウン中は呼ばれない
+    game_id = "pokoten"         # サーバーのアダプターと同じ ID
+    size = (480, 800)
+    sess                        # 通信(NetSession)。NetGameScene が入れる。seed / players / seat / settings / opp_name など
+    def settings(self) -> dict          # register に載せる設定(ランダムマッチは、同じ設定の人どうし)
+    def settings_label(self) -> str     # 名前入力・待機画面に出す設定の説明
+    def start_match(self, sess)         # 新しい対戦(match)。sess.seed / sess.players / sess.seat で初期化する
+    def reset_input(self)               # 入力を離す(チャットの窓を開いたときなど)
+    def handle(self, ev)                # 対戦中の入力。チャット入力中・確認中は呼ばれない
+    def update(self, sess, controls)    # 1フレーム。一時停止・カウントダウン・再開待ちの間は呼ばれない
+    def local_over(self) -> bool        # 自分の側が終わったか(帯の表示用)
+    def draw(self, sess, screen, view, frame)   # view.banner = (大きい字, 色, 小さい字)。盤面に重ねて出す
+    def draw_top(self, screen)          # 一番手前(エフェクトなど。任意)
+    def handle_global(ev, phase) / draw_global(screen, phase)   # 音量ボタンなど(任意)
+    def sound(name) / bgm(name)         # 音(任意)
+    def load_name() / save_name(name)   # 名前の保存(既定: ブラウザの localStorage)
+```
+
+### 2.2 realtime(RealtimeAdapter)
+```python
+    def update(self, sess, controls):
+        for _, kind, d in sess.take_events():          # 他の席のイベント
+            if kind == "attack": self.garbage += d["n"]
+            elif kind == "snap": self.opp_board = decode(d["b"])
         self.game.update()
-        for ev in self.game.drain_events():
-            if ev["type"] == "clear":
-                self.net.send_event("attack", {"n": 1})
+        for ev in self.game.events:
+            if ev["type"] == "clear": sess.send_event("attack", {"n": 1})
         if self.game.over and not self.reported:
-            self.net.send_event("over", {})
-    def on_event(self, seat, kind, data):   # 他の席のイベントが届いた
-        if kind == "attack": self.game.receive_garbage(data["n"])
-        elif kind == "snap": self.opp_board = decode(data["b"])
+            sess.send_event("over")                    # サーバーのアダプターの over が、勝敗を決める
 ```
-- 入力は、ゲームが自分で受け取る(`handle_event(ev)` で、pygame のイベントが渡る)。チャット窓・確認ダイアログが開いている間は、渡されない。
+- 実例: ポコテンの `PokotenAdapter`(mesaka/pokoten の `main.py`)。
 
-### 2.2 turns のフック
+### 2.3 turns(TurnAdapter)
 ```python
-    def on_turn(self, seat, seq):             # 手番が回ってきた(seat == 自分なら、手を指せる)
+class MyTurnGame(TurnAdapter):
+    def on_match(self, sess):                 # 新しい対戦の用意
     def on_action(self, seat, seq, action):   # サーバーから届いた手を適用する(自分の手も、ここで適用する)
-        self.board.apply(seat, action)
-    def state_hash(self) -> str:              # 適用後の状態のハッシュ(決定的であること)
-        return sha1(self.board.serialize())
-    def is_finished(self):                    # 終局なら ranks を返す(全員が同じ結果になること)
-        return self.board.ranks() or None
-    # 自分の手: self.net.send_action({"x": 1, "y": 2})   ← 手番でなければ、フレームワークが捨てる
+    def state_hash(self) -> str:              # 適用後の状態のハッシュ(64文字まで・決定的)。self.digest(obj) が使える
+    def is_finished(self):                    # 終局なら ranks([{"seat","rank"}])、まだなら None
+    # 入力・描画: handle(ev) で self.play(self.sess, {"cell": 3}) / draw(...)
 ```
-- ルールは**決定的**にする。乱数は `ctx.seed` から作った `random.Random` だけ。浮動小数・`set` / `dict` の順序・並べ替えの安定性に依存しない。
-- 手を送ったら、サーバーから `on_action` が返るまで、自分の盤面は変えない(全員が同じ順で適用するため)。
+- `TurnAdapter.update` が、届いた手を順に適用して、ハッシュ(`sync`)を送り、終局になったら結果を申告(`finish`)する。同じ手(seq)が二度届いても適用しない。
+- 手番でなければ、`play` は送らない(`False`)。手を送ったら、`on_action` が呼ばれるまで、自分の盤面は変えない(全員が同じ順で適用するため)。
+- ルールは**決定的**にする。乱数は `sess.seed` から作った `random.Random` だけ。浮動小数・`set` / `dict` の順序・並べ替えの安定性に依存しない。サーバーは手の中身を見ないので、**不正な手(空いていないマスなど)は、全員が同じように無視する**ルールにする(○×の `ttt_rules.py` が例)。
+- チャットで止まっている間(`frozen`)は `update` が呼ばれず、届いた手は溜まって、再開後に順に適用される。
+- ハッシュが食い違うと、サーバーが `desync` を送って対戦を中止する(結果は全員1位・`why: "desync"`)。画面は「状態がずれたため、中止しました」と出す。
+- 実例: `examples/tictactoe/`(○×。サーバー側 `adapter.js`・ルール `ttt_rules.py`・クライアント `ttt_client.py`)。3人用のサーバー側の見本は `examples/guess3/`(数当て)。
 
 ## 3. 画面の設定(Theme / Strings)
 ```python
-scene = NetGameScene(PokotenAdapter(), screen_size=(480, 800),
-                     theme=Theme(bg=..., accent=..., font=jp_font),
-                     strings=Strings.ja(extra={...}))      # 文言を上書き・追加
+scene = NetGameScene(MyAdapter(), theme=Theme(font=jp_font, background=draw_background),
+                     strings={"net_title": "ネット対戦"})      # 文言を上書き・追加(既定は strings_ja.py)
 ```
-- `Theme`: 配色・ボタンの見た目・フォントの取得関数。画面サイズに合わせた配置は、フレームワークが計算する。
-- `Strings`: 日本語の既定。文言を足したら、`tools/build_font.py` でフォントを作り直す(ゲームの文言も、渡して一緒に)。
-- 画面部品を個別に使うこともできる(`ui.NameField` / `ui.Keypad` / `ui.ChatPanel` / `ui.ResultButtons` など)。
-
-## 4. ゲームが受け取るもの(`self.net`)
-- `send_event(kind, data)` / `send_action(action)` / `report_finish(ranks)` / `chat(text)`
-- `players`(席・名前)/ `you`(自分の席)/ `seed`
-- `paused`(いま止まっているか)/ `frozen`(チャット中・カウントダウン中のどちらでも `True`)
+- `Theme`: 色・ボタンの見た目・フォント(`font(size)`)・背景(`background(screen)`)。画面サイズに合わせた配置は `Layout` が計算する(基準 480×800 を中央に置く)。
+- `Strings`: 日本語の既定。文言を足したら、ゲーム側のフォント作成をやり直す(`netgame/strings_ja.py` の文字も入れる)。
+- 画面部品(`ui/screens.py` `ui/widgets.py`)を、個別に使うこともできる。

@@ -28,6 +28,8 @@ STRINGS_JA = {
     'net_key_sub_pass': 'ルームを作った友だちが決めた数字です',
     'net_err_room': 'そのルームIDのルームが見つかりません',
     'net_err_pass': 'パスワードが違います',
+    'net_desync': '状態がずれたため、中止しました',
+    'net_abort': '対戦が中止されました',
     'net_err_key': 'パスワードは4桁の数字です',
     'net_key_del': '消す',
     'net_key_ok': '決定',

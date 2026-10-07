@@ -2,6 +2,7 @@
 対戦中の「盤面を動かす・描く」だけを、アダプターに任せる。
 
 realtime のゲームは、RealtimeAdapter を継承して、update / draw などを書く。
+turns(ロックステップ)のゲームは、TurnAdapter を継承して、on_action / state_hash / is_finished / draw などを書く。
 音は、アダプターの sound(name) / bgm(name) が受け取る(鳴らさないなら、そのままでよい)。
   sound: "menu_ok"(ボタンを押した) / "menu_move"(相手のチャットが届いた) / "win" / "lose"
   bgm:   "menu"(対戦の前後) / "game"(対戦中)
@@ -11,6 +12,7 @@ realtime のゲームは、RealtimeAdapter を継承して、update / draw な�
 class GameAdapter:
     game_id = "game"                 # サーバーのアダプターと同じ ID(接続時に ?game= で送る)
     size = (480, 800)                # 画面の大きさ(NetGameScene の部品は、基準 480×800 を中央に置く)
+    sess = None                      # 通信(NetSession)。NetGameScene が、接続のたびに入れる(handle など、引数にない所で使う)
 
     # ---- 登録 ----
     def settings(self) -> dict:
@@ -71,3 +73,68 @@ class GameAdapter:
 
 class RealtimeAdapter(GameAdapter):
     """リアルタイム制(全員が同時に動く)。イベントは sess.send_event / sess.take_events で送受信する。"""
+
+
+class TurnAdapter(GameAdapter):
+    """ターン制(ロックステップ)。ルールはクライアントだけにある。サーバーは、手番・通し番号・ハッシュの突き合わせだけをやる。
+
+    ゲーム側が書くもの:
+      on_match(sess)               新しい対戦の用意(sess.seed / sess.players / sess.seat / sess.settings)
+      on_action(seat, seq, action) サーバーから届いた手を適用する。**自分の手も、ここで適用する**(全員が同じ順で適用するため)
+      state_hash()                 適用後の状態のハッシュ(64文字まで・決定的。digest() が使える)
+      is_finished()                終局なら ranks([{"seat", "rank"}])、まだなら None。全員が同じ結果になること
+      draw(sess, screen, view, frame) / handle(ev)   描画と入力。手は self.play(sess, action) で送る
+    ルールは**決定的**にする。乱数は sess.seed から作った random.Random だけ。浮動小数・set / dict の順序に頼らない。
+    手を送ったら、on_action が呼ばれるまで、自分の盤面は変えない。"""
+
+    def __init__(self):
+        self._reported = False
+        self._last_seq = -1
+
+    # ---- ゲーム側が書く ----
+    def on_match(self, sess):
+        pass
+
+    def on_action(self, seat, seq, action):
+        raise NotImplementedError
+
+    def state_hash(self) -> str:
+        raise NotImplementedError
+
+    def is_finished(self):
+        return None
+
+    # ---- 使える道具 ----
+    @staticmethod
+    def digest(obj) -> str:
+        """JSON にできる状態から、決定的なハッシュ(sha1 の16進40文字)を作る。"""
+        import hashlib
+        import json
+        return hashlib.sha1(json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode()).hexdigest()
+
+    def play(self, sess, action) -> bool:
+        """自分の手を送る。手番でなければ送らない(False)。"""
+        return sess.send_action(action)
+
+    # ---- 流れ(NetGameScene から呼ばれる) ----
+    def start_match(self, sess):
+        self._reported = False
+        self._last_seq = -1
+        self.on_match(sess)
+
+    def local_over(self):
+        return self._reported
+
+    def update(self, sess, controls):
+        """届いた手を、順に適用して、ハッシュを送る。終局になったら、結果を申告する(全員の申告が一致したらサーバーが確定)。"""
+        for seat, seq, action in sess.take_actions():
+            if seq <= self._last_seq:                       # 同じ手が二度届いても、適用しない
+                continue
+            self._last_seq = seq
+            self.on_action(seat, seq, action)
+            sess.send_sync(seq, self.state_hash())
+            if not self._reported:
+                ranks = self.is_finished()
+                if ranks:
+                    self._reported = True
+                    sess.report_finish(ranks)
