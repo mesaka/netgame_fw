@@ -1,0 +1,3 @@
+# 開発・テスト用(ブラウザ版では使わない)
+pytest
+websockets

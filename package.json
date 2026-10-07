@@ -2,6 +2,7 @@
   "name": "netgame_fw",
   "version": "0.1.0",
   "private": true,
+  "license": "Apache-2.0",
   "description": "対戦ゲーム用ネットワーク・フレームワーク(サーバー側。クライアントは client/)",
   "type": "module",
   "scripts": {
