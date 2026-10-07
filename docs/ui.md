@@ -39,4 +39,4 @@ scene = NetGameScene(MyAdapter())           # theme=Theme(font=...), strings={"n
 - `python -m pytest tests/test_flow.py` — 偽の通信での流れのテスト。
 - `python tools/compare_pokoten.py --pokoten <ポコテンの場所> [--out DIR]` — ポコテンの現行の画面と、ピクセル単位で見比べる(`--out` に並べた画像を書き出す)。
 
-ターン制(`TurnAdapter`)は M5 で足す。いまのアダプターは、リアルタイム制のもの。
+ターン制のゲームは `TurnAdapter` を継承する(`docs/adapter.md` 2.3、見本は `examples/tictactoe/`)。流れ(`NetGameScene`)は、リアルタイム制と同じ。
