@@ -7,21 +7,21 @@ Pygame / pygbag(ブラウザ)の対戦ゲーム向けに、「接続 → 名前 
 元になったのは、[mesaka/pokoten](https://github.com/mesaka/pokoten) の「ネット対戦」(本番で動作確認済み)。
 ポコテンは、このフレームワークの最初の利用者(アダプター)になる。
 
-状態: **M2(クライアントの核)を実装中**。サーバー(M1)は `main` に入っている。画面部品は、これから(M3)。
+状態: **M0〜M6 まで実装済み**(サーバー・クライアントの核・画面部品・ポコテンへの取り込み・ターン制の見本・文書)。ポコテンは取り込み済み(ブラウザでの本番確認は、まだ)。新しいゲームに組み込むなら、[docs/getting-started.md](docs/getting-started.md)。
 
 ```
 npm test                         # サーバーのテスト(Node 22 以上)
-pip install -r requirements-dev.txt && python -m pytest   # クライアントのテスト
-npx wrangler dev -c examples/pokoten/wrangler.jsonc --port 8787   # ローカルで動かす
-node examples/pokoten/e2e.mjs    # 本物の Workers ランタイムに2人分つないで、通しで確認(JS のクライアント)
-PYTHONPATH=client python examples/pokoten/e2e_client.py   # 同じ確認を、Python のクライアント(NetSession)で
+pip install -r requirements-dev.txt && python -m pytest   # クライアント・画面部品のテスト
+npx wrangler dev -c examples/tictactoe/wrangler.jsonc --port 8787   # ローカルで動かす(○×。ポコテンは examples/pokoten/)
+python examples/tictactoe/e2e.py # 本物の Workers ランタイムに2人分つないで、通しで確認(ターン制・画面部品つき)
+node examples/pokoten/e2e.mjs    # 同じ確認(リアルタイム制・JS のクライアント)。Python のクライアントは examples/pokoten/e2e_client.py
 ```
 
 ## 2つの対戦方式(どちらもライブラリ化する)
 | 方式 | 想定するゲーム | 同期の仕組み |
 |---|---|---|
 | **リアルタイム(realtime)** | ポコテンのような、各自が自分の盤面を同時に進める | 各自が自分で計算し、必要なイベント(おじゃま・盤面・負けの申告)だけを中継する |
-| **ターン制(turns)** | 次に作るターン制ゲーム | 手番はサーバーが管理。手(action)を全員に同じ順で配り、各自が同じルールで再現する(ロックステップ)。ずれはハッシュで検出する |
+| **ターン制(turns)** | ○×(見本)・次に作るターン制ゲーム | 手番はサーバーが管理。手(action)を全員に同じ順で配り、各自が同じルールで再現する(ロックステップ)。ずれはハッシュで検出する |
 
 どちらも、接続〜準備OK〜チャット〜結果〜再戦/退出の流れ・画面部品は共通。
 
@@ -29,17 +29,19 @@ PYTHONPATH=client python examples/pokoten/e2e_client.py   # 同じ確認を、Py
 - 人数: いまは**2人対戦**。設計は最初から**N人(3人以上)に対応**できる形にするが、3人以上の開始方法・途中退出の扱いは**保留**(将来の拡張)。
 - 範囲: サーバー、クライアントの通信・状態管理、**基本の画面部品**(名前入力・相手の決め方・ルーム/テンキー・待機・準備OK・カウントダウン・チャット窓・結果・退出)。
 - ターン制は、**v1 = ロックステップ型**(ルールはクライアントだけ。手札など「相手に見せない情報」は守れない)。隠し情報が必要になったら、サーバー権威型(v2)を足す。
-- ポコテンへは、**コピー(vendoring / `git subtree`)で取り込む**(pygbag がアプリのフォルダ内のファイルだけを梱包するため)。
-- 次のゲーム: アイデア段階(保留)。まず、見本のターン制ゲーム(○×)で確かめる。
+- ゲームへは、**コピー**で取り込む(`tools/copy_to_game.sh`。pygbag がアプリのフォルダ内のファイルだけを梱包するため)。
+- 次のゲーム: アイデア段階(保留)。見本のターン制ゲーム(○×)で、流れは確かめた。
 
 ## 文書
 - [docs/design.md](docs/design.md) — 全体設計(構成・N人モデル・サーバー構成・画面部品・pygbag の制約・リスク)
 - [docs/protocol.md](docs/protocol.md) — 通信プロトコル v1(メッセージ、状態、エラー)
+- [docs/getting-started.md](docs/getting-started.md) — **新しいゲームに組み込む手順**(取り込み・サーバー・クライアント・フォント・pygbag・確認)
 - [docs/adapter.md](docs/adapter.md) — ゲームが書くもの(アダプター)の仕様。リアルタイム用・ターン制用
+- [docs/ui.md](docs/ui.md) — 画面部品(`NetGameScene`・`Theme`・`Strings`・`Layout`)の使い方
 - [docs/migration.md](docs/migration.md) — ポコテンから移す手順(M0〜M6)と、現在の通信との対応表
 
 ## ロードマップ
-M0 設計・仕様 → M1 サーバー → M2 クライアントの核 → M3 画面部品 → M4 ポコテンを置き換え → M5 ターン制(○×)と見本 → M6 文書。
+M0 設計・仕様 → M1 サーバー → M2 クライアントの核 → M3 画面部品 → M4 ポコテンを置き換え → M5 ターン制(○×)と見本 → M6 文書(いまここまで完了)。
 詳細は [docs/migration.md](docs/migration.md)。
 
 ## ライセンス
@@ -58,5 +60,6 @@ netgame_fw (c) 2026 mesaka  https://github.com/mesaka/netgame_fw  (Apache Licens
 あわせて、`LICENSE` のコピーを、取り込んだコードの近く(`netgame/` フォルダなど)に残すこと。改変したファイルには、改変したことが分かる表示を付けること(第4条(b))。
 
 ## 未定(保留)
+- 横長の専用レイアウト(いまは基準 480×800 を中央に置く)
 - 3人以上の開始方法(ルームは「作った人が開始」/ランダムは「人数がそろうまで」など)、途中で抜けた人の扱い
 - 次のゲームの名前・ルール
