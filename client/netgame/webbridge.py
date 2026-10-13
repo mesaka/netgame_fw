@@ -109,6 +109,15 @@ SHIM = r"""
       var ok = document.execCommand("copy"); document.body.removeChild(t); return ok;
     } catch (e) { return false; }
   };
+  // 別のタブ・アプリで開く(X・LINE のURL)。mailto: は、いまのページを離れずにメールアプリを開く。開けたら true
+  N.openUrl = function (json) {
+    var u = JSON.parse(json);
+    try {
+      if (/^mailto:/i.test(u)) { window.location.href = u; return true; }
+      return !!window.open(u, "_blank");
+    } catch (e) { return false; }
+  };
+  N.pageUrl = function () { return ascii(window.location.origin + window.location.pathname); };
   N.close = function () { try { if (N.ws) { var w = N.ws; N.ws = null; w.close(); } } catch (e) {} N.state = "closed"; };
 })();
 """
@@ -176,6 +185,40 @@ def copy_text(text) -> bool:
     except Exception as e:                           # noqa: BLE001
         print("copy:", repr(e))
         return False
+
+
+def share_url(kind, subject, body) -> str:
+    """招待を送るURL。kind: "x"(X のDM作成) / "line" / "mail"。送り先は、開いた先で選ぶ。知らない kind は ""。"""
+    from urllib.parse import quote
+    b = quote(body, safe="")
+    if kind == "x":
+        return "https://x.com/messages/compose?text=" + b
+    if kind == "line":
+        return "https://line.me/R/msg/text/?" + b
+    if kind == "mail":
+        return "mailto:?subject=%s&body=%s" % (quote(subject, safe=""), b)
+    return ""
+
+
+def open_url(url) -> bool:
+    """URL(https: / mailto:)を、ブラウザ・メールアプリなどで開く。開けたら True。"""
+    try:
+        if IS_WEB:
+            return bool(bridge().openUrl(json.dumps(url)))
+        import webbrowser
+        return bool(webbrowser.open(url))
+    except Exception as e:                           # noqa: BLE001
+        print("open_url:", repr(e))
+        return False
+
+
+def page_url() -> str:
+    """いま開いているページのURL(ブラウザだけ。招待の文面に添える)。それ以外は ""。"""
+    try:
+        return str(bridge().pageUrl()) if IS_WEB else ""
+    except Exception as e:                           # noqa: BLE001
+        print("page_url:", repr(e))
+        return ""
 
 
 def paste_text() -> str:
