@@ -268,6 +268,33 @@ def test_waiting_room_shows_ids_and_copy(monkeypatch):
     assert sc.copied == "key"
 
 
+def test_waiting_room_share_invite(monkeypatch):
+    sc, t, a = make()
+    idle(sc, t)
+    type_text(sc, "Taro")
+    click(sc, "make")
+    for d in "4321":
+        click(sc, "k" + d)
+    click(sc, "kok")
+    t.recv(t="waiting", room="246810")
+    sc.update()
+    rects = sc._pad_rects()
+    assert {"share_x", "share_line", "share_mail", "back"} <= set(rects)
+    assert not rects["back"].colliderect(rects["share_x"]) and not rects["share_x"].colliderect(rects["share_line"])
+    opened = []
+    monkeypatch.setattr("netgame.webbridge.open_url", lambda u: opened.append(u) or True)
+    monkeypatch.setattr("netgame.webbridge.page_url", lambda: "https://example.com/game/")
+    click(sc, "share_x")
+    click(sc, "share_line")
+    click(sc, "share_mail")
+    assert opened[0].startswith("https://x.com/messages/compose?text=")
+    assert opened[1].startswith("https://line.me/R/msg/text/?")
+    assert opened[2].startswith("mailto:?subject=")
+    for u in opened:
+        assert "246810" in u and "4321" in u and "https%3A%2F%2Fexample.com%2Fgame%2F" in u
+        assert "\n" not in u and " " not in u
+
+
 # ---------------------------------------------------------------- 準備OK・カウントダウン
 def test_match_starts_game_and_ready_flow():
     sc, t, a = make()

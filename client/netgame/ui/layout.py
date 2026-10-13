@@ -74,6 +74,15 @@ class Layout:
     def btn_wait(self):
         return self.R(60, 500, 360, 44)
 
+    def btn_wait_friend(self):
+        """ルームを作って待つ画面の「やめる」(招待を送るボタンの分だけ下げてある)"""
+        return self.R(60, 566, 360, 44)
+
+    def share_buttons(self):
+        """招待を送るボタン(X / LINE / メール)"""
+        return {"share_x": self.R(60, 508, 112, 44), "share_line": self.R(184, 508, 112, 44),
+                "share_mail": self.R(308, 508, 112, 44)}
+
     def copy_room(self):
         return self.R(334, 308, 86, 34)
 

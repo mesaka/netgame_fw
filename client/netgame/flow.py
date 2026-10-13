@@ -170,7 +170,9 @@ class NetGameScene:
         if ph == "waiting":
             rects = {"back": L.btn_wait()}
             if self.sess.mode == "friend":
+                rects["back"] = L.btn_wait_friend()
                 rects["copy_room"], rects["copy_key"] = L.copy_room(), L.copy_key()
+                rects.update(L.share_buttons())
             return rects
         if ph == "error":
             return {"go": L.btn_a(), "back": L.btn_b()}
@@ -316,6 +318,18 @@ class NetGameScene:
         text = {"room": s.room_id, "key": s.password}[what]
         if text and webbridge.copy_text(text):
             self.copied, self.copied_t = what, 120
+
+    def _share(self, kind):
+        """ルームIDとパスワードを、X(DM)・LINE・メールの作成画面に入れて開く。送り先は、開いた先で選ぶ。"""
+        s = self.sess
+        if not s.room_id or not s.password:
+            return
+        S = self.S
+        body = S.fmt("net_share_text", room=s.room_id, pw=s.password)
+        url = webbridge.page_url()
+        if url:
+            body += "\n" + url
+        webbridge.open_url(webbridge.share_url(kind, S["net_share_subject"], body))
 
     # ---- チャット ----
     def _toggle_panel(self):
@@ -478,6 +492,8 @@ class NetGameScene:
             self._copy("room")
         elif f == "copy_key":
             self._copy("key")
+        elif f in ("share_x", "share_line", "share_mail"):
+            self._share(f[6:])
         elif f in ("kok", "kdel"):
             self._key_press(f[1:])
         elif f[0] == "k" and f[1:].isdigit():

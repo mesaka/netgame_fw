@@ -112,6 +112,14 @@ def test_storage_and_input_use_ascii_json(monkeypatch):
     assert webbridge.paste_text() == ""                       # ブラウザでは、貼り付けは入力欄が受け持つ
 
 
+def test_share_url():
+    assert webbridge.share_url("x", "件名", "あ b\nc").startswith("https://x.com/messages/compose?text=")
+    assert webbridge.share_url("line", "件名", "あ b\nc") == "https://line.me/R/msg/text/?%E3%81%82%20b%0Ac"
+    assert webbridge.share_url("mail", "件名 1", "本文") == "mailto:?subject=%E4%BB%B6%E5%90%8D%201&body=%E6%9C%AC%E6%96%87"
+    assert webbridge.share_url("sms", "a", "b") == ""
+    assert webbridge.page_url() == ""                         # ブラウザ以外では空
+
+
 def test_storage_is_noop_outside_the_browser():
     assert webbridge.storage_get("k") is None
     webbridge.storage_set("k", "v")                           # 何も起きない

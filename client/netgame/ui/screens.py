@@ -134,12 +134,15 @@ def draw_pre_screen(screen, ui, frame, kind, v, pressed=None):
             center(" ".join(v.password), 398, 40, T.gold)
             btn(L.copy_key(), S["net_copied"] if v.copied == "key" else S["net_copy"], "copy_key", 12,
                 on=v.copied == "key")
-            center(S["net_room_waiting"] + dots, 444, 22, T.gold)
-            center(S["net_room_sub"], 474, 14)
+            center(S["net_room_waiting"] + dots, 436, 22, T.gold)
+            center(S["net_room_sub"], 464, 14)
+            center(S["net_share"], 492, 14, T.dim)
+            for name, r in L.share_buttons().items():
+                btn(r, S["net_" + name], name, 16)
         else:
             center(S["net_waiting"] + dots, 350, 24, T.gold)
             center(S["net_waiting_sub"], 390, 14, T.dim)
-        btn(L.btn_wait(), S["net_cancel"], "back", 20)
+        btn(L.btn_wait_friend() if friend else L.btn_wait(), S["net_cancel"], "back", 20)
     else:
         main, sub = {"lost": ("net_err_lost", "net_err_lost_sub"),
                      "timeout": ("net_err_timeout", "net_err_timeout_sub"),
