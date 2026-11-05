@@ -144,7 +144,10 @@ export class NetGameCore {
   }
 
   onClose(ws) {
-    this._leave(this._att(ws), false);
+    const me = this._att(ws);
+    const grace = this._graceSec(me);
+    if (grace > 0) this._disconnect(me, grace);
+    else this._leave(me, false);
   }
 
   // ---- メッセージ ----
@@ -163,6 +166,7 @@ export class NetGameCore {
       case "action": return this._action(ws, me, adapter, m);
       case "act": return this._act(ws, me, adapter, m);
       case "resync": return this._resync(ws, me, adapter);
+      case "resume": return this._resume(ws, me, adapter, m);
       case "sync": return this._sync(ws, me, adapter, m);
       case "finish": return this._clientFinish(ws, me, adapter, m);
       case "chat": return this._chat(ws, me, adapter, m);
@@ -179,6 +183,7 @@ export class NetGameCore {
     const name = cleanText(m.name, lim.name);
     if (!name) return this._error(ws, "name");
     const settings = adapter.normalizeSettings ? adapter.normalizeSettings(m.settings) : (m.settings || {});
+    if (me.v >= 2 && adapter.mode === "authoritative") this._set(ws, { tok: this._newToken() });   // 再接続用の、席の合言葉(resume)
     if (m.mode === "friend") return this._registerFriend(ws, me, adapter, m, name, settings, lim);
     return this._registerRandom(ws, me, adapter, name, settings);
   }
@@ -186,7 +191,7 @@ export class NetGameCore {
   _registerRandom(ws, me, adapter, name, settings) {
     const key = String(adapter.matchKey ? adapter.matchKey(settings) : "");
     this._set(ws, { name, settings, matchKey: key, state: "queued", since: this._now() });
-    this._send(ws, { t: "registered", id: me.id, name });
+    this._registered(ws, name);
     const need = this._max(adapter) - 1;
     const others = this.host.sockets()
       .map((w) => [w, this._att(w)])
@@ -199,11 +204,22 @@ export class NetGameCore {
                    { ws, name, settings }];
     const rec = {
       id: this._newRoomId(adapter), game: me.game, kind: "random", mode: adapter.mode || "realtime",
-      players: group.map((g) => ({ id: this._att(g.ws).id, name: g.name })),
+      players: group.map((g) => ({ id: this._att(g.ws).id, name: g.name, token: this._att(g.ws).tok })),
       settings: group[0].settings, state: "waiting",
     };
     group.forEach((g, seat) => this._set(g.ws, { state: "room", roomId: rec.id, seat }));
     this._beginMatch(rec, adapter);
+  }
+
+  /** registered。v=2 の authoritative には、再接続用の token(席の合言葉。画面に出さず、保存しておく)を添える */
+  _registered(ws, name) {
+    const a = this._att(ws);
+    this._send(ws, a.tok ? { t: "registered", id: a.id, name, token: a.tok } : { t: "registered", id: a.id, name });
+  }
+  _newToken() {
+    const b = new Uint8Array(16);
+    globalThis.crypto.getRandomValues(b);
+    return Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
   }
 
   // 部屋に入る失敗の記録(rooms.joinLimit)。clientKey があれば kv に(接続し直しても続く)、なければ接続ごとに持つ。
@@ -257,20 +273,20 @@ export class NetGameCore {
       }
       if (R.joinLimit) this._joinPut(ws, { n: 0, until: 0 });
       const seat = rec.players.length;
-      rec.players.push({ id: me.id, name });
+      rec.players.push({ id: me.id, name, token: this._att(ws).tok });
       this._set(ws, { name, state: "room", roomId: rec.id, seat });
-      this._send(ws, { t: "registered", id: me.id, name });
+      this._registered(ws, name);
       if (rec.players.length >= this._max(adapter)) return this._beginMatch(rec, adapter);
       this._putRoom(rec);
       return this._send(ws, { t: "waiting", room: rec.id });
     }
     const rec = {                                                       // ルームを作って待つ
       id: this._newRoomId(adapter), game: me.game, kind: "friend", mode: adapter.mode || "realtime",
-      pass, fails: 0, players: [{ id: me.id, name }], settings, state: "waiting",
+      pass, fails: 0, players: [{ id: me.id, name, token: this._att(ws).tok }], settings, state: "waiting",
     };
     this._set(ws, { name, state: "room", roomId: rec.id, seat: 0 });
     this._putRoom(rec);
-    this._send(ws, { t: "registered", id: me.id, name });
+    this._registered(ws, name);
     this._send(ws, { t: "waiting", room: rec.id });
   }
 
@@ -292,7 +308,10 @@ export class NetGameCore {
     const players = rec.players.map((p, seat) => ({ seat, name: p.name }));
     for (const seat of this._present(rec)) {
       const w = this._sockById(rec.players[seat].id);
-      if (w) this._send(w, { t: "match", seed: rec.seed, you: seat, players, settings: rec.settings, mode: rec.mode });
+      if (!w) continue;
+      const msg = { t: "match", seed: rec.seed, you: seat, players, settings: rec.settings, mode: rec.mode };
+      if (this._att(w).v >= 2) msg.room = rec.id;      // v=2: 再接続(resume)に使う部屋コード
+      this._send(w, msg);
     }
     if (!this._flow(adapter).ready) {      // 準備OKの段階を省くゲーム: すぐ始める
       this._start(rec, adapter);
@@ -357,8 +376,7 @@ export class NetGameCore {
       this.rate.set(key, recent);
     }
     if (def.to === "others") this._broadcast(c.rec, { t: "event", seat: c.seat, k: m.k, d }, c.seat);
-    if (def.on) def.on(this._roomApi(c.rec), c.seat, d);
-    this._save(c.rec);
+    if (def.on) { def.on(this._roomApi(c.rec), c.seat, d); this._save(c.rec); }   // 中継だけのイベント(スタンプなど)は、何も書かない
   }
 
   // ---- turns: 手・手番・ハッシュの突き合わせ ----
@@ -490,7 +508,14 @@ export class NetGameCore {
     const adapter = this.games[rec.game];
     const seat = me.seat;
     if (!rec.players[seat] || rec.players[seat].id !== me.id || rec.players[seat].left) return;
+    this._removeSeat(rec, adapter, seat);
+  }
+
+  /** 席の人が部屋を出た(自分から・切断の猶予切れ)。状態に応じて、結果・通知・部屋の削除をする。 */
+  _removeSeat(rec, adapter, seat) {
     rec.players[seat].left = true;
+    delete rec.players[seat].offline;
+    delete rec.players[seat].until;
     const present = this._present(rec);
     if (present.length === 0 || rec.state === "waiting") {
       // 待機中に作った人が抜けたら、部屋は消える(3人以上の開始前の途中退出は、将来の拡張)
@@ -501,7 +526,7 @@ export class NetGameCore {
       this._broadcast(rec, { t: "player_left", seat });
       return this._save(rec);
     }
-    const onLeave = adapter.onLeave && typeof adapter.onLeave === "object" ? adapter.onLeave.then : adapter.onLeave;   // grace(猶予)は M9
+    const onLeave = adapter.onLeave && typeof adapter.onLeave === "object" ? adapter.onLeave.then : adapter.onLeave;
     const policy = onLeave || (this._max(adapter) === 2 ? "forfeit" : "abort");
     if (policy === "forfeit") {
       const ranks = rec.players.map((p, i) => ({ seat: i, rank: i === seat ? 2 : 1 }));
@@ -511,11 +536,20 @@ export class NetGameCore {
   }
 
   // ---- authoritative: サーバーがルールと状態を持つ(docs/protocol.md 9) ----
+  // ゲームの状態は kv の "state:<ルームID>" に、{ s: 状態, q: seq, r: 乱数の位置, e: 結果を通知済みか } の形で置く。
+  // 手のたびに変わるもの(seq・乱数・通知済みか)を、部屋の記録ではなくこちらに同居させて、1手の書き込みを1行にする
+  // (Durable Object の SQLite は、書き込んだ行の数で課金・制限される。docs/design-v2.md の Q3)。
+  /** 状態を読む。あわせて rec.seq / rec.rngState / rec.ended を、最新の値にする。 */
   _getState(rec) {
     const v = this.host.kv.get("state:" + rec.id);
-    return v ? JSON.parse(v) : null;
+    if (!v) return null;
+    const e = JSON.parse(v);
+    rec.seq = e.q; rec.rngState = e.r; rec.ended = !!e.e;
+    return e.s;
   }
-  _putState(rec, state) { this.host.kv.put("state:" + rec.id, JSON.stringify(state)); }
+  _putState(rec, state) {
+    this.host.kv.put("state:" + rec.id, JSON.stringify({ q: rec.seq, r: rec.rngState, e: rec.ended, s: state }));
+  }
 
   /** ctx.rng: 部屋の seed から作る決定的な乱数(mulberry32)。位置は rec.rngState に残す。 */
   _rngFor(rec) {
@@ -553,23 +587,30 @@ export class NetGameCore {
     const events = g.startEvents ? g.startEvents(state, ctx) || [] : [];
     rec.seq = 0;
     rec.ended = false;
+    const o = this._outcomeEdge(rec, adapter, state);
     this._putState(rec, state);
     this._pushState(rec, adapter, state, events);
-    this._checkOutcome(rec, adapter, state);
+    this._announce(rec, adapter, o);
   }
 
-  /** outcome が「続く」から「終わり」に変わったとき、1回だけ通知する */
-  _checkOutcome(rec, adapter, state) {
+  /** outcome が「続く」から「終わり」に変わったか。変わったときだけ { ranks, why } を返す(rec.ended を更新する)。 */
+  _outcomeEdge(rec, adapter, state) {
     const out = adapter.game.outcome ? adapter.game.outcome(state) : null;
-    if (!out) { rec.ended = false; return; }
-    if (rec.ended || !this._validRanks(rec, out.ranks)) return;
+    if (!out) { rec.ended = false; return null; }
+    if (rec.ended || !this._validRanks(rec, out.ranks)) return null;
     rec.ended = true;
-    const why = out.why || "normal";
+    return { ranks: out.ranks, why: out.why || "normal" };
+  }
+
+  /** 結果を通知する(状態の送信のあとに呼ぶ) */
+  _announce(rec, adapter, o) {
+    if (!o) return;
     if (this._flow(adapter).rematch === "game") {       // 部屋は playing のまま。続き(次の対戦)はゲームの手で進める
-      rec.result = { ranks: out.ranks, why };
-      this._broadcast(rec, { t: "result", ranks: out.ranks, why });
+      rec.result = o;
+      this._broadcast(rec, { t: "result", ranks: o.ranks, why: o.why });
+      this._save(rec);
     } else {
-      this._finish(rec, out.ranks, why);
+      this._finish(rec, o.ranks, o.why);
     }
   }
 
@@ -589,10 +630,10 @@ export class NetGameCore {
       return this._sendResync(ws, rec, adapter, this._getState(rec), seat);
     }
     rec.seq += 1;
-    this._putState(rec, state);
+    const o = this._outcomeEdge(rec, adapter, state);
+    this._putState(rec, state);                                   // 1手の書き込みは、この1行だけ(結果が出たときを除く)
     this._pushState(rec, adapter, state, r.events || []);
-    this._checkOutcome(rec, adapter, state);
-    this._save(rec);
+    this._announce(rec, adapter, o);
   }
 
   _sendResync(ws, rec, adapter, state, seat) {
@@ -604,6 +645,99 @@ export class NetGameCore {
     const c = this._ctx(me);
     if (!c || c.rec.mode !== "authoritative" || c.rec.state !== "playing") return;
     this._sendResync(ws, c.rec, adapter, this._getState(c.rec), c.seat);
+  }
+
+  // ---- 再接続(v=2 の authoritative): 切断の猶予・resume・presence・アラーム(docs/protocol.md 9.5) ----
+  /** 切断を、すぐ退出にせず待つ秒数。authoritative の既定は 60。onLeave: { grace: 0 } で、v1 と同じ(すぐ退出) */
+  _graceSec(me) {
+    if (me.state !== "room" || !me.roomId) return 0;
+    const adapter = this.games[me.game];
+    if (!adapter || adapter.mode !== "authoritative") return 0;
+    const ol = adapter.onLeave;
+    const g = ol && typeof ol === "object" && ol.grace !== undefined ? Number(ol.grace) : 60;
+    return g > 0 ? g : 0;
+  }
+
+  _disconnect(me, grace) {
+    const rec = this._getRoom(me.roomId);
+    if (!rec) return;
+    const seat = me.seat;
+    const p = rec.players[seat];
+    if (!p || p.id !== me.id || p.left) return;      // すでに入れ替わった(resume で別の接続に移った)接続の close は無視
+    p.offline = true;
+    p.until = this._now() + grace * 1000;
+    this._broadcast(rec, { t: "presence", seat, online: false }, seat);
+    this._save(rec);
+    const q = this._graceQueue();
+    if (!q.includes(rec.id)) { q.push(rec.id); this.host.kv.put("gq", JSON.stringify(q)); }
+    this._scheduleAlarm();
+  }
+
+  _graceQueue() {
+    const v = this.host.kv.get("gq");
+    return v ? JSON.parse(v) : [];
+  }
+
+  /** 猶予中の席がある部屋のうち、いちばん早い期限にアラームを合わせる(なければ止める)。 */
+  _scheduleAlarm() {
+    const keep = [];
+    let soonest = Infinity;
+    for (const id of this._graceQueue()) {
+      const rec = this._getRoom(id);
+      const untils = rec ? rec.players.filter((p) => p.offline && !p.left).map((p) => p.until) : [];
+      if (untils.length === 0) continue;
+      keep.push(id);
+      soonest = Math.min(soonest, ...untils);
+    }
+    this.host.kv.put("gq", JSON.stringify(keep));
+    if (keep.length === 0) { if (this.host.deleteAlarm) this.host.deleteAlarm(); return; }
+    if (this.host.setAlarm) this.host.setAlarm(soonest);
+  }
+
+  /** アラームが鳴った(Durable Object の alarm())。猶予が切れた席を、退出として扱う。 */
+  onAlarm() {
+    const now = this._now();
+    for (const id of this._graceQueue()) {
+      const rec = this._getRoom(id);
+      if (!rec) continue;
+      const adapter = this.games[rec.game];
+      for (let seat = 0; seat < rec.players.length; seat++) {
+        const p = rec.players[seat];
+        if (rec.deleted) break;
+        if (p.offline && !p.left && p.until <= now) this._removeSeat(rec, adapter, seat);
+      }
+    }
+    this._scheduleAlarm();
+  }
+
+  /** 切れた席に、新しい接続を結びなおす。合言葉(token)が合えば、いまの状態を送り直す。 */
+  _resume(ws, me, adapter, m) {
+    if (me.state !== "new" || me.v < 2 || adapter.mode !== "authoritative") return this._error(ws, "resume");
+    const R = this._rooms(adapter);
+    const code = R.code === "alnum4" ? String(m.room || "").toUpperCase() : String(m.room || "");
+    const rec = ROOM_RE[R.code].test(code) ? this._getRoom(code) : null;
+    const seat = rec && typeof m.token === "string" && m.token !== ""
+      ? rec.players.findIndex((p) => p.token === m.token && !p.left) : -1;
+    if (!rec || rec.game !== me.game || seat < 0) return this._error(ws, "resume");   // 部屋がない・合言葉が違う、は区別しない
+    const p = rec.players[seat];
+    const old = this._sockById(p.id);                      // 切れたことにまだ気づいていない古い接続は、閉じて入れ替える
+    p.id = me.id;
+    p.offline = false;
+    delete p.until;
+    this._set(ws, { name: p.name, state: "room", roomId: rec.id, seat, tok: p.token });
+    if (old) { this._set(old, { state: "new", roomId: null, seat: null }); try { old.close(4001, "replaced"); } catch (_) {} }
+    this._save(rec);
+    this._send(ws, {
+      t: "resumed", id: me.id, you: seat, room: rec.id, status: rec.state, mode: rec.mode, settings: rec.settings,
+      seed: rec.seed, players: rec.players.map((q, i) => ({ seat: i, name: q.name })),
+    });
+    if (rec.state === "playing") this._sendResync(ws, rec, adapter, this._getState(rec), seat);
+    else if (rec.state === "ready") this._send(ws, { t: "ready_state", seats: [...rec.ready].sort((a, b) => a - b) });
+    else if (rec.state === "waiting") this._send(ws, { t: "waiting", room: rec.id });
+    else if (rec.state === "over" && rec.result) this._send(ws, { t: "result", ranks: rec.result.ranks, why: rec.result.why });
+    rec.players.forEach((q, i) => { if (i !== seat && q.offline && !q.left) this._send(ws, { t: "presence", seat: i, online: false }); });
+    this._broadcast(rec, { t: "presence", seat, online: true }, seat);
+    this._scheduleAlarm();
   }
 
   _detach(rec, seat) {

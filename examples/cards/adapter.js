@@ -5,6 +5,7 @@ export default {
   matchKey: () => "all",
   flow: { ready: false, rematch: "game" },         // 部屋が決まったらすぐ始める。「もう一度」はゲームの手(again)で
   rooms: { code: "alnum4", password: "none" },
+  onLeave: { grace: 3, then: "forfeit" },           // 切れても3秒は席を残す(既定は60秒)。そのあいだに resume で戻れる
   events: { stamp: { to: "others", maxPerSec: 3, validate: (d) => Number.isInteger(d.id) && d.id >= 0 && d.id < 8 } },
   game: {
     init: (ctx) => ({ hands: [0, 1].map(() => [0, 1, 2].map(() => Math.floor(ctx.rng() * 10))), played: [[], []], draws: [] }),

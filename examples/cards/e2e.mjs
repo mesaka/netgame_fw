@@ -57,10 +57,40 @@ ok(/^[A-HJ-NP-Z2-9]{4}$/.test(code || ""), "部屋コードは4文字の英数")
 d.say({ t: "register", name: "え", mode: "friend", room: (code || "").toLowerCase() }); await sleep(400);
 ok(d.last("match")?.you === 1 && c.last("state"), "小文字のコードで入れて、対戦が始まる");
 
-// 相手が切れたら勝ち
-c.ws.close(); await sleep(500);
-ok(d.last("result")?.why === "left", "相手が切れたら、残りの人の勝ち");
+// 再接続(resume): 切れても猶予(このアダプターは3秒)のうちに戻れて、続きが指せる
+const e = await client(); const f = await client();
+e.say({ t: "register", name: "お", mode: "random" }); f.say({ t: "register", name: "か", mode: "random" });
+await sleep(600);
+const [eRoom, eTok] = [e.last("match")?.room, e.last("registered")?.token];
+ok(/^[0-9a-f]{32}$/.test(eTok || "") && !!eRoom, "registered に token、match に部屋コード");
+const eHand = e.last("state").view.hand;
+e.ws.close(); await sleep(500);
+ok(f.last("presence")?.online === false && !f.last("result"), "切れても、すぐには退出にならない(presence: offline)");
+f.say({ t: "act", a: { type: "play", n: f.last("state").view.hand[0] } }); await sleep(300);
+const e2 = await client();
+e2.say({ t: "resume", room: eRoom, token: eTok }); await sleep(500);
+ok(e2.last("resumed")?.you === 0 && e2.last("state")?.resync === true, "resume で、同じ席に戻り、最新の state が届く");
+ok(JSON.stringify(e2.last("state").view.hand) === JSON.stringify(eHand) && e2.last("state").seq === 1, "手札は元のまま。留守のあいだの手(seq 1)も反映");
+ok(f.last("presence")?.online === true, "相手に presence: online");
+e2.say({ t: "act", a: { type: "play", n: eHand[0] } }); await sleep(300);
+ok(f.last("state").seq === 2, "戻ったあとも、手が指せる");
+const bad = await client();
+bad.say({ t: "resume", room: eRoom, token: "0".repeat(32) }); await sleep(300);
+ok(bad.last("error")?.code === "resume", "合言葉が違えば、戻れない");
 
-for (const w of [old, a, b, c, d]) try { w.ws.close(); } catch (_) {}
+// 猶予切れ(Durable Object のアラーム): 戻らなければ、猶予(3秒)のあとに、残りの人の勝ち
+e2.ws.close(); await sleep(1000);
+ok(!f.last("result"), "猶予のうちは、結果は出ない");
+await sleep(3500);
+ok(f.last("result")?.why === "left", "猶予が切れたら、アラームで退出になり、残りの人の勝ち");
+const late = await client();
+late.say({ t: "resume", room: eRoom, token: eTok }); await sleep(300);
+ok(late.last("error")?.code === "resume", "猶予切れのあとは、戻れない");
+
+// 相手が切れたら(猶予のあと)勝ち
+c.ws.close(); await sleep(4500);
+ok(d.last("result")?.why === "left", "相手が切れたまま猶予が過ぎたら、残りの人の勝ち");
+
+for (const w of [old, a, b, c, d, e, f, e2, bad, late]) try { w.ws.close(); } catch (_) {}
 console.log(failed ? `失敗: ${failed}` : "すべて ok");
 process.exit(failed ? 1 : 0);

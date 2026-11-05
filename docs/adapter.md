@@ -61,6 +61,7 @@ export default {
   },
 };
 ```
+- `onLeave: { grace: 60, then: "forfeit" }`(任意): 切断してから退出とみなすまでの猶予(秒。既定 60。`0` でなし)と、猶予切れ・退出のときの扱い(`forfeit`: 残りの人の勝ち / `abort`)。猶予のあいだは、`resume` で同じ席に戻れる(`protocol.md` 9.5)。
 - `ctx` = `{ roomId, settings, players: [{seat, name}], seed, rng }`。**乱数は `ctx.rng()` だけ**を使う(部屋の seed から作る決定的な乱数。Durable Object が休止しても、続きの位置が保たれる)。`Math.random` を使わない。
 - `state` は、**JSON にできる値**にする(関数・`Map`・`Set`・循環を入れない)。`apply` の成功のたびに、サーバーが保存する。`apply` が断った(`ok: false`)・例外を投げたときは、保存しない(状態は変わらない)。
 - `apply` は、手番・手の形・ルールを**すべて自分で確かめる**(サーバーは、手の中身を解釈しない)。

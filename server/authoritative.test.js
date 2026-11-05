@@ -197,12 +197,13 @@ test("休止: 状態と乱数の位置は kv にあるので、核を作り直�
   assert.deepEqual(run(true), straight);
 });
 
-test("退出: 対戦中に出ると、残りの人の勝ち(why: left)。状態は消える", () => {
+test("退出: 対戦中に leave すると、すぐ残りの人の勝ち(why: left)。状態は消える", () => {
   const env = setup(GAMES);
   const [a, b] = pair(env, "cards");
-  env.close(a);
+  env.say(a, { t: "leave" });
   assert.deepEqual(b.last("result").ranks, [{ seat: 0, rank: 2 }, { seat: 1, rank: 1 }]);
   assert.equal(b.last("result").why, "left");
+  assert.equal([...env.store.keys()].some((k) => k.startsWith("state:")), false);
 });
 
 test("event(スタンプ): authoritative でも turns でも、アダプターの events があれば中継できる", () => {
@@ -290,4 +291,40 @@ test("設定の正規化・ランダムマッチ・チャットは、authoritati
   const [a, b] = pair(env, "cards");
   env.say(a, { t: "chat", text: "こんにちは" });
   assert.equal(b.last("chat").text, "こんにちは");
+});
+
+test("保存の量: 1手の書き込みは1行(状態だけ)。断られた手・resync・チャットは書かない", () => {
+  const env = setup(GAMES);
+  const [a, b] = pair(env, "cards");
+  const writes = [];
+  const kv = env.core.host.kv;
+  const { put, delete: del } = kv;
+  kv.put = (k, v) => { writes.push("put " + k.split(":")[0]); put(k, v); };
+  kv.delete = (k) => { writes.push("del " + k.split(":")[0]); del(k); };
+  const n = handOf(a)[0];
+  env.say(a, { t: "act", a: { type: "play", n } });
+  assert.deepEqual(writes, ["put state"]);
+  writes.length = 0;
+  env.say(a, { t: "act", a: { type: "play", n: 99 } });          // 断られた手
+  env.say(a, { t: "resync" });
+  env.say(b, { t: "chat", text: "やあ" });
+  env.say(b, { t: "event", k: "stamp", d: { id: 1 } });
+  assert.deepEqual(writes, []);
+  // 結果が出た手だけは、部屋の記録(result)も書く
+  for (const w of [a, b]) for (const m of [...handOf(w)]) env.say(w, { t: "act", a: { type: "play", n: m } });
+  assert.ok(writes.filter((x) => x === "put room").length <= 1);
+});
+
+test("seq・乱数の位置・通知済みフラグは、状態といっしょに保存される(核を作り直しても、結果は1回だけ・seq は続く)", () => {
+  const env = setup(GAMES);
+  const [a, b] = pair(env, "cards");
+  env.say(a, { t: "act", a: { type: "draw" } });
+  const fresh = new NetGameCore(env.core.host, GAMES);
+  fresh.onMessage(b, JSON.stringify({ t: "act", a: { type: "draw" } }));
+  assert.equal(a.last("state").seq, 2);
+  assert.equal(a.last("state").view.draws.length, 2);
+  for (const w of [a, b]) for (const m of [...handOf(w)]) new NetGameCore(env.core.host, GAMES).onMessage(w, JSON.stringify({ t: "act", a: { type: "play", n: m } }));
+  assert.equal(a.all("result").length, 1);
+  new NetGameCore(env.core.host, GAMES).onMessage(a, JSON.stringify({ t: "act", a: { type: "draw" } }));   // 終わったあとの手でも、結果は送り直さない
+  assert.equal(a.all("result").length, 1);
 });
