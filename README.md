@@ -81,10 +81,12 @@ tests/       クライアント(pytest)のテスト
 - [docs/adapter.md](docs/adapter.md) — ゲームが書くもの(アダプター)の仕様。リアルタイム用・ターン制用
 - [docs/ui.md](docs/ui.md) — 画面部品(`NetGameScene`・`Theme`・`Strings`・`Layout`)の使い方
 - [docs/migration.md](docs/migration.md) — ポコテンから移す手順(M0〜M6)と、現在の通信との対応表
+- [docs/design-v2.md](docs/design-v2.md) — **v2 の設計案(未実装)**: サーバー権威型・再接続・JS クライアント(正式)・部屋コード設定。ブラウザ(JS)のゲームにも使える汎用ライブラリにするための計画(M7〜M12)
 
 ## ロードマップ
 M0 設計・仕様 → M1 サーバー → M2 クライアントの核 → M3 画面部品 → M4 ポコテンを置き換え → M5 ターン制(○×)と見本 → M6 文書(いまここまで完了)。
 詳細は [docs/migration.md](docs/migration.md)。
+次は **M7〜M12(汎用化)**: サーバー権威型(隠し情報)・再接続・JS クライアントを足し、hiro-hoshi-kazu.com の花札2作品を `netgame_fw` の上で動かす。計画は [docs/design-v2.md](docs/design-v2.md)(設計案。未実装)。
 
 ## ライセンス
 [Apache License 2.0](LICENSE)。**出典の記載が条件**になる(下の「出典の書き方」)。
