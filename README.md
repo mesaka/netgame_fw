@@ -7,6 +7,24 @@ Pygame / pygbag(ブラウザ)の対戦ゲーム向けに、「接続 → 名前 
 元になったのは、[mesaka/pokoten](https://github.com/mesaka/pokoten) の「ネット対戦」(本番で動作確認済み)。
 ポコテンは、このフレームワークの最初の利用者(アダプター)になる。
 
+## 特長
+- **対戦の「流れ全体」が入っている**: 名前入力 → 相手の決め方(ランダム / ルーム+4桁の数字) → 待機 → 準備OK → カウントダウン → 対戦 → 結果 → 再戦 / 退出、対戦前後のチャット。ゲームごとに書くのは「ゲームのルール(アダプター)」だけ。
+- **ブラウザで動く**: クライアントは Python(pygame-ce)で、pygbag でブラウザ向けに出せる。PC 版(スレッド)とブラウザ版の両方を想定。
+- **サーバーは Cloudflare だけ**: Workers + Durable Object(WebSocket)。別サーバーや DB は要らない。
+- **2つの同期方式**: リアルタイム制、ターン制(ロックステップ。ずれはハッシュで検出)。
+- **基本の画面部品つき**: `NetGameScene` / `Theme` / `Strings` / `Layout`。色・文言・配置は差し替えられる。
+
+### 向いているもの / 向いていないもの
+| | |
+|---|---|
+| 向いている | Pygame / pygbag で作った、2人対戦の小さなブラウザゲーム。ランダムマッチと、友だち同士のルーム対戦を足したい |
+| 向いていない | 汎用の WebSocket ライブラリ(→ [PartyServer / PartySocket](https://github.com/cloudflare/partykit) など)。大人数・大規模なゲーム。強い不正対策が必要なゲーム(下の「注意」) |
+
+### 注意(セキュリティ・不正対策)
+- ターン制の v1(ロックステップ)は、**ルールがクライアントだけ**にあるため、手札など「相手に見せない情報」は守れない。隠し情報が必要なゲームには、いまは向かない(サーバー権威型は将来)。
+- ルームの「パスワード」は**4桁の数字**で、友だち同士で遊ぶための簡単な合言葉。強い認証ではない。
+- リアルタイム制は、各自が自分の盤面を計算して申告する方式。**クライアントの申告を、サーバーは完全には検証できない**(アダプターで検証する範囲まで)。
+
 状態: **M0〜M6 まで実装済み**(サーバー・クライアントの核・画面部品・ポコテンへの取り込み・ターン制の見本・文書)。ポコテンは取り込み済みで、本番(Cloudflare)のブラウザで動作確認済み(2026-10-07)。ターン制の ○× は、ブラウザでは未確認。新しいゲームに組み込むなら、[docs/getting-started.md](docs/getting-started.md)。
 
 ```
@@ -31,6 +49,30 @@ node examples/pokoten/e2e.mjs    # 同じ確認(リアルタイム制・JS の�
 - ターン制は、**v1 = ロックステップ型**(ルールはクライアントだけ。手札など「相手に見せない情報」は守れない)。隠し情報が必要になったら、サーバー権威型(v2)を足す。
 - ゲームへは、**コピー**で取り込む(`tools/copy_to_game.sh`。pygbag がアプリのフォルダ内のファイルだけを梱包するため)。
 - 次のゲーム: アイデア段階(保留)。見本のターン制ゲーム(○×)で、流れは確かめた。
+
+## 動作要件
+| 用途 | 必要なもの |
+|---|---|
+| サーバーのテスト・ローカル実行 | Node.js 22 以上、`npx wrangler`(Cloudflare Workers) |
+| クライアントのテスト | Python 3、`pip install -r requirements-dev.txt`(pytest, websockets) |
+| ゲーム(クライアント) | Python + pygame-ce、ブラウザ版は [pygbag](https://github.com/pygame-web/pygbag) |
+| 本番 | Cloudflare アカウント(Workers + Durable Object。SQLite バックエンドの Durable Object) |
+
+## 使い始める
+1. 見本を動かす: 上の `npx wrangler dev -c examples/tictactoe/wrangler.jsonc --port 8787`(○×)。
+2. 自分のゲームに組み込む: [docs/getting-started.md](docs/getting-started.md)。`bash tools/copy_to_game.sh <ゲームのリポジトリ>` で `netgame/`(クライアント)と `server/netgame/`(サーバー)を**コピー**する(pygbag がアプリのフォルダ内のファイルしか梱包しないため)。コピーしたものは直接直さず、こちらで直して、もう一度コピーする。
+3. ゲームのルールを「アダプター」に書く: [docs/adapter.md](docs/adapter.md)(ひな形は `templates/`)。
+
+## ディレクトリ構成
+```
+server/      サーバーの核(core.js)・Worker の入口(worker.js)・文言(text.js)・テスト用(testkit.js)。Cloudflare に依存するのは worker.js だけ
+client/      クライアント(netgame/)。pygame に依存するのは ui/ と flow.py(NetGameScene)だけ
+templates/   新しいゲーム用のひな形(server/・client/)
+examples/    見本: tictactoe(ターン制)、pokoten(リアルタイム制)、guess3(N人の例)
+docs/        設計・プロトコル・アダプター・画面部品・移行の文書
+tools/       コピー(copy_to_game.sh)・フォント生成・比較ツール
+tests/       クライアント(pytest)のテスト
+```
 
 ## 文書
 - [docs/design.md](docs/design.md) — 全体設計(構成・N人モデル・サーバー構成・画面部品・pygbag の制約・リスク)
@@ -58,6 +100,20 @@ Apache License 2.0 の第4条(d)により、`netgame_fw` を取り込んだ(改�
 netgame_fw (c) 2026 mesaka  https://github.com/mesaka/netgame_fw  (Apache License 2.0)
 ```
 あわせて、`LICENSE` のコピーを、取り込んだコードの近く(`netgame/` フォルダなど)に残すこと。改変したファイルには、改変したことが分かる表示を付けること(第4条(b))。
+
+## 状況とサポートの方針
+- **個人のプロジェクト**で、バージョンは 0.x。互換性のない変更を予告なく行うことがある(取り込んだ版は、ゲーム側の `netgame/SOURCE_COMMIT` で分かる)。
+- 無保証(Apache License 2.0 第7条・第8条)。動作や対応の約束はしない。
+- **Issue** は歓迎(不具合・質問・要望)。ただし、返信や対応の時期は約束できない。
+- **Pull Request** は、先に Issue で相談してほしい(方針に合わないものは、取り込めないことがある)。変更するときは、テスト(`npm test` と `python -m pytest`)を通すこと。
+- **脆弱性**は、公開の Issue に詳細を書かず、GitHub の Security タブの「Report a vulnerability」から非公開で報告してほしい。
+
+## 利用例
+- [mesaka/pokoten](https://github.com/mesaka/pokoten) — ポコテン。リアルタイム制の最初の利用者。
+- `examples/tictactoe/` — ターン制(○×)の見本。
+
+## 関連
+- 汎用の WebSocket ライブラリには、[PartyServer / PartySocket](https://github.com/cloudflare/partykit) がある。netgame_fw は、「対戦ゲームの流れと画面」までを含む、Pygame / pygbag 向けの専用の土台で、これらには依存していない。
 
 ## 未定(保留)
 - 横長の専用レイアウト(いまは基準 480×800 を中央に置く)
