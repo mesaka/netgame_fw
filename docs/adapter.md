@@ -2,7 +2,7 @@
 
 ゲームは「サーバー側のアダプター(JS)」と「クライアント側のアダプター(Python)」の2つだけを書く。
 接続・名前・ルーム・準備OK・一時停止・チャット・結果・再戦・退出の流れは、フレームワークが動かす。
-(以下は設計上のインターフェース。M1〜M3 で実装しながら調整する。)
+(1.1 / 1.2 は v1、1.3 は v2。いずれも実装済み。)
 
 ## 1. サーバー側のアダプター(JS)
 
@@ -42,6 +42,30 @@ export default {
 ```
 - 手番の確認、`seq` の付与、中継、ハッシュの突き合わせ、`desync` は、フレームワークがやる。
 - ルールはクライアントだけにある。サーバーは、手の中身を解釈しない。
+
+### 1.3 authoritative(サーバー権威型。v=2)
+```js
+export default {
+  id: "cards", mode: "authoritative", minPlayers: 2, maxPlayers: 2,
+  matchKey: () => "all",
+  flow:  { ready: false, rematch: "game" },       // 省略時: { ready: true, rematch: "framework" }
+  rooms: { code: "alnum4", password: "none" },    // 省略時: { code: "digits6", password: "required" }
+  events: { stamp: { to: "others", maxPerSec: 3, validate: (d) => Number.isInteger(d.id) } },   // 任意
+  game: {
+    init(ctx)                      { return state; },                // 新しい対戦の状態(JSON にできる値)
+    startEvents(state, ctx)        { return [{ t: "deal" }]; },      // 任意。最初の state に付く events
+    apply(state, seat, action, ctx){ return { ok: true, events: [] }; },   // 状態を直接変えてよい。断るなら { ok: false, error: "理由" }
+    view(state, seat)              { return { /* その席から見える範囲だけ */ }; },
+    outcome(state)                 { return null; /* 終わりなら { ranks: [{seat, rank}], why? } */ },
+    eventsFor(state, seat, events) { return events; },               // 任意。席ごとに events を変える(隠し情報があるとき)
+  },
+};
+```
+- `ctx` = `{ roomId, settings, players: [{seat, name}], seed, rng }`。**乱数は `ctx.rng()` だけ**を使う(部屋の seed から作る決定的な乱数。Durable Object が休止しても、続きの位置が保たれる)。`Math.random` を使わない。
+- `state` は、**JSON にできる値**にする(関数・`Map`・`Set`・循環を入れない)。`apply` の成功のたびに、サーバーが保存する。`apply` が断った(`ok: false`)・例外を投げたときは、保存しない(状態は変わらない)。
+- `apply` は、手番・手の形・ルールを**すべて自分で確かめる**(サーバーは、手の中身を解釈しない)。
+- `outcome` は、手のたびに呼ばれる。「続く」→「終わり」に変わったとき、1回だけ `result` になる(`ranks` が全員分でなければ無視)。
+- 見本: `examples/cards/adapter.js`(隠した手札・スタンプ・結果のあとの「もう一度」)。テスト: `server/authoritative.test.js`。
 
 ## 2. クライアント側のアダプター(Python)
 

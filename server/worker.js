@@ -32,7 +32,11 @@ export function createGameWorker(games, { binding = "HUB", instance = "main" } =
       const pair = new WebSocketPair();
       const [client, server] = Object.values(pair);
       this.ctx.acceptWebSocket(server);
-      this.core.onOpen(server, { game: url.searchParams.get("game"), v: url.searchParams.get("v") ?? undefined });
+      // clientKey: 接続元の見分け(入室失敗の制限 rooms.joinLimit 用)。Cloudflare が付ける接続元 IP
+      this.core.onOpen(server, {
+        game: url.searchParams.get("game"), v: url.searchParams.get("v") ?? undefined,
+        clientKey: request.headers.get("CF-Connecting-IP") ?? undefined,
+      });
       return new Response(null, { status: 101, webSocket: client });
     }
 
