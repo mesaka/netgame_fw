@@ -1,15 +1,16 @@
 # netgame_fw — 2人(将来はN人)対戦ゲーム用ネットワーク・フレームワーク
 
-Pygame / pygbag(ブラウザ)の対戦ゲーム向けに、「接続 → 名前 → 相手の決め方(ランダム / ルーム+パスワード)→ 待機 → 準備OK →
+Pygame / pygbag の対戦ゲームと、**ブラウザ(JavaScript)の対戦ゲーム**向けに、「接続 → 名前 → 相手の決め方(ランダム / ルーム+パスワード)→ 待機 → 準備OK →
 対戦 → 決着 → 再戦 / 退出」の**流れ全体**を、ゲームに依存しない土台として提供する。
 サーバーは Cloudflare Workers + Durable Object(WebSocket)。
 
 元になったのは、[mesaka/pokoten](https://github.com/mesaka/pokoten) の「ネット対戦」(本番で動作確認済み)。
-ポコテンは、このフレームワークの最初の利用者(アダプター)になる。
+利用しているゲーム: ポコテン(Pygame / pygbag。リアルタイム制)と、[hiro-hoshi-kazu.com](https://hiro-hoshi-kazu.com/) の花札2作品=[こいこい](https://hiro-hoshi-kazu.com/koikoi/)・[花合わせ](https://hiro-hoshi-kazu.com/awase/)(ブラウザの JavaScript。サーバー権威型)。
+使いかたの紹介記事: [対戦ゲームのネット対戦を、ライブラリにして公開した：netgame_fw の使いかたと標準機能](https://hiro-hoshi-kazu.com/blog/netgame-fw)。
 
 ## 特長
 - **対戦の「流れ全体」が入っている**: 名前入力 → 相手の決め方(ランダム / ルーム+4桁の数字) → 待機 → 準備OK → カウントダウン → 対戦 → 結果 → 再戦 / 退出、対戦前後のチャット。ゲームごとに書くのは「ゲームのルール(アダプター)」だけ。
-- **ブラウザで動く**: クライアントは Python(pygame-ce)で、pygbag でブラウザ向けに出せる。PC 版(スレッド)とブラウザ版の両方を想定。
+- **ブラウザで動く**: クライアントは、JavaScript(依存なし。ブラウザ・Node 22 以上)と、Python(pygame-ce。pygbag でブラウザ向けに出せる。PC 版(スレッド)とブラウザ版の両方)の2つ。
 - **サーバーは Cloudflare だけ**: Workers + Durable Object(WebSocket)。別サーバーや DB は要らない。
 - **2つの同期方式**: リアルタイム制、ターン制(ロックステップ。ずれはハッシュで検出)。
 - **基本の画面部品つき**: `NetGameScene` / `Theme` / `Strings` / `Layout`。色・文言・配置は差し替えられる。
@@ -25,7 +26,7 @@ Pygame / pygbag(ブラウザ)の対戦ゲーム向けに、「接続 → 名前 
 - ルームの「パスワード」は**4桁の数字**で、友だち同士で遊ぶための簡単な合言葉。強い認証ではない。
 - リアルタイム制は、各自が自分の盤面を計算して申告する方式。**クライアントの申告を、サーバーは完全には検証できない**(アダプターで検証する範囲まで)。
 
-状態: **M0〜M6 まで実装済み**(サーバー・クライアントの核・画面部品・ポコテンへの取り込み・ターン制の見本・文書)。ポコテンは取り込み済みで、本番(Cloudflare)のブラウザで動作確認済み(2026-10-07)。ターン制の ○× は、ブラウザでは未確認。新しいゲームに組み込むなら、[docs/getting-started.md](docs/getting-started.md)。
+状態: **M0〜M12 まで実装済み**(サーバー・クライアントの核・画面部品・ポコテンへの取り込み・ターン制の見本・文書、そして v2: サーバー権威型・再接続・JS クライアントと、花札2作品での実利用)。ポコテンは本番(Cloudflare)のブラウザで動作確認済み(2026-10-07)。花札2作品は、本番(2026-11-06 公開)で、ボットによる自動対戦を確認済み。ターン制の ○× は、ブラウザでは未確認。新しいゲームに組み込むなら、[docs/getting-started.md](docs/getting-started.md)(Python / pygbag のゲームは本文、**JavaScript のゲームは末尾の「JS のゲームの場合」**)。
 
 ```
 npm test                         # サーバーのテスト(Node 22 以上)
@@ -85,12 +86,12 @@ tests/       クライアント(pytest)のテスト。tests/conformance/ は、J
 - [docs/ui.md](docs/ui.md) — 画面部品(`NetGameScene`・`Theme`・`Strings`・`Layout`)の使い方
 - [docs/migration.md](docs/migration.md) — ポコテンから移す手順(M0〜M6)と、現在の通信との対応表
 - [docs/client-js.md](docs/client-js.md) — **JS クライアント**(ブラウザ用。使いかた・再接続・適合テスト)。Python の v=2 の使いかたも
-- [docs/design-v2.md](docs/design-v2.md) — **v2 の設計と計画(M10 まで実装済み)**: サーバー権威型・再接続・JS クライアント(正式)・部屋コード設定。ブラウザ(JS)のゲームにも使える汎用ライブラリにするための計画(M7〜M12)
+- [docs/design-v2.md](docs/design-v2.md) — **v2 の設計と計画(M12 まで実装済み)**: サーバー権威型・再接続・JS クライアント(正式)・部屋コード設定。ブラウザ(JS)のゲームにも使える汎用ライブラリにするための計画(M7〜M12)
 
 ## ロードマップ
 M0 設計・仕様 → M1 サーバー → M2 クライアントの核 → M3 画面部品 → M4 ポコテンを置き換え → M5 ターン制(○×)と見本 → M6 文書(いまここまで完了)。
 詳細は [docs/migration.md](docs/migration.md)。
-次は **M7〜M12(汎用化)**: サーバー権威型(隠し情報)・再接続・JS クライアントを足し、hiro-hoshi-kazu.com の花札2作品を `netgame_fw` の上で動かす。計画は [docs/design-v2.md](docs/design-v2.md)。**M7(仕様)・M8(サーバー権威型 `authoritative`・部屋と進行の設定・入室失敗の制限)・M9(再接続: token・切断の猶予・`resume`・`presence`・休止からの復帰)・M10(JS クライアント `client-js/` と、Python との適合テスト)は実装済み**。花札への適用(M11〜M12)はこれから。
+**M7〜M12(汎用化)**: サーバー権威型(隠し情報)・再接続・JS クライアントを足し、hiro-hoshi-kazu.com の花札2作品を `netgame_fw` の上で動かす。計画と経過は [docs/design-v2.md](docs/design-v2.md)。**M7(仕様)・M8(サーバー権威型 `authoritative`・部屋と進行の設定・入室失敗の制限)・M9(再接続: token・切断の猶予・`resume`・`presence`・休止からの復帰)・M10(JS クライアント `client-js/` と、Python との適合テスト)・M11〜M12(hiro-hoshi-kazu.com の花札2作品=こいこい・花合わせが、この上で動く。旧版の PartyServer は撤去)は実装済み**。実際の使いかたの例は、[mesaka/hiro-hoshi-kazu-web](https://github.com/mesaka/hiro-hoshi-kazu-web) の `src/awase-netgame.js` / `src/koikoi-netgame.js`(アダプター各約40行)と `public/js/net-ng.js`(ブラウザ側)。
 
 ## ライセンス
 [Apache License 2.0](LICENSE)。**出典の記載が条件**になる(下の「出典の書き方」)。

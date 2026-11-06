@@ -71,3 +71,11 @@ python <netgame_fw>/tools/build_font.py --font 元フォント.ttf --out assets/
 
 ## 7. 更新するとき
 netgame_fw を直して(PR → `main`)、ゲーム側で `copy_to_game.sh` をやり直し、テストを通し、フォントを作り直し、プレビューで確認する。通信のバージョン(`v`)が上がったら、サーバーとクライアントを同時に配信する(旧版のタブは、再読み込みが必要)。
+
+## JS のゲームの場合(ブラウザの JavaScript で作ったゲーム)
+Python / pygbag を使わない、ブラウザの JavaScript のゲーム(Cloudflare Workers で配信)では、上の 1〜5 の代わりに、次の流れで組み込む。実例は、[mesaka/hiro-hoshi-kazu-web](https://github.com/mesaka/hiro-hoshi-kazu-web) の花札2作品(`src/awase-netgame.js` / `src/koikoi-netgame.js` / `public/js/net-ng.js`)。
+1. **取り込む(コピー)**: `bash <netgame_fw>/tools/copy_to_js_game.sh <ゲームのリポジトリ> src/netgame public/js/netgame`。サーバー側(`core.js` / `worker.js` / `text.js`・テスト用の `testkit.js`)と、クライアント側(`client.js`)がコピーされる。コピーしたものは直接直さない。出典の記載は README の「出典の書き方」。
+2. **サーバー**: ゲームのルールを、**アダプター**(サーバー権威型は `docs/adapter.md` 1.3)に書く。`createGameWorker({ ゲームID: アダプター }, { binding })` で Worker を作り、`wrangler.jsonc` に Durable Object(クラス名 `Hub`)を登録する。ルールのエンジンは、CPU 戦(ブラウザの中)と共通にできる(花札はそうしている)。
+3. **ブラウザ**: [docs/client-js.md](client-js.md) の JS クライアント(`NetGameClient`)でつなぐ。自動再接続・token の保存(ページを開き直しての復帰)・受信の順序保証がある。画面(アニメーションなど)は、ゲームが作る。
+4. **確かめる**: CPU と同じ AI の**ボット**(サーバーから届く view だけで手を決める)どうしを、サーバーの核(`testkit.js`)の上で、最後まで対戦させる。切断と復帰・猶予切れ・隠し情報(相手の手札が届かないこと)も確かめる。そのあと、`wrangler dev` や本番に、本物の WebSocket でつないだ自動対戦を、**ペアは部屋コードで作って**(ランダムマッチは別のペアと組み合わさる)実行する。花札の `scripts/test-ng.mjs` / `test-ng-client.mjs` / `e2e-ng.mjs` が、そのまま参考になる。
+- 隠し情報が要るゲームは、**サーバー権威型**(`mode: "authoritative"`)にする。ターン制の v1(ロックステップ)は、隠し情報を守れない。
