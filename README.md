@@ -29,9 +29,10 @@ Pygame / pygbag(ブラウザ)の対戦ゲーム向けに、「接続 → 名前 
 
 ```
 npm test                         # サーバーのテスト(Node 22 以上)
-pip install -r requirements-dev.txt && python -m pytest   # クライアント・画面部品のテスト
+pip install -r requirements-dev.txt && python -m pytest   # クライアント・画面部品のテスト(+ Node があれば、JS クライアントとの適合テスト)
 npx wrangler dev -c examples/tictactoe/wrangler.jsonc --port 8787   # ローカルで動かす(○×。ポコテンは examples/pokoten/)
 python examples/tictactoe/e2e.py # 本物の Workers ランタイムに2人分つないで、通しで確認(ターン制・画面部品つき)
+node examples/cards/e2e-client.mjs  # JS クライアント(client-js)で、同じく本物の Workers に、実際の通信でつないで確認(自動再接続・保存した token での復帰)
 node examples/cards/e2e.mjs      # サーバー権威型(v2)の見本を、同じく本物の Workers で確認(再接続・猶予切れのアラームも。先に examples/cards/wrangler.jsonc で wrangler dev)
 node examples/pokoten/e2e.mjs    # 同じ確認(リアルタイム制・JS のクライアント)。Python のクライアントは examples/pokoten/e2e_client.py
 ```
@@ -67,12 +68,13 @@ node examples/pokoten/e2e.mjs    # 同じ確認(リアルタイム制・JS の�
 ## ディレクトリ構成
 ```
 server/      サーバーの核(core.js)・Worker の入口(worker.js)・文言(text.js)・テスト用(testkit.js)。Cloudflare に依存するのは worker.js だけ
-client/      クライアント(netgame/)。pygame に依存するのは ui/ と flow.py(NetGameScene)だけ
+client/      Python のクライアント(netgame/)。pygame に依存するのは ui/ と flow.py(NetGameScene)だけ
+client-js/   JS のクライアント(netgame/client.js。画面を含まない・依存なし)と、そのテスト
 templates/   新しいゲーム用のひな形(server/・client/)
 examples/    見本: tictactoe(ターン制)、pokoten(リアルタイム制)、guess3(N人の例)
 docs/        設計・プロトコル・アダプター・画面部品・移行の文書
 tools/       コピー(copy_to_game.sh)・フォント生成・比較ツール
-tests/       クライアント(pytest)のテスト
+tests/       クライアント(pytest)のテスト。tests/conformance/ は、JS と Python のクライアントの適合テスト(同じシナリオ・同じ golden)
 ```
 
 ## 文書
@@ -82,12 +84,13 @@ tests/       クライアント(pytest)のテスト
 - [docs/adapter.md](docs/adapter.md) — ゲームが書くもの(アダプター)の仕様。リアルタイム用・ターン制用
 - [docs/ui.md](docs/ui.md) — 画面部品(`NetGameScene`・`Theme`・`Strings`・`Layout`)の使い方
 - [docs/migration.md](docs/migration.md) — ポコテンから移す手順(M0〜M6)と、現在の通信との対応表
-- [docs/design-v2.md](docs/design-v2.md) — **v2 の設計と計画(M9 まで実装済み)**: サーバー権威型・再接続・JS クライアント(正式)・部屋コード設定。ブラウザ(JS)のゲームにも使える汎用ライブラリにするための計画(M7〜M12)
+- [docs/client-js.md](docs/client-js.md) — **JS クライアント**(ブラウザ用。使いかた・再接続・適合テスト)。Python の v=2 の使いかたも
+- [docs/design-v2.md](docs/design-v2.md) — **v2 の設計と計画(M10 まで実装済み)**: サーバー権威型・再接続・JS クライアント(正式)・部屋コード設定。ブラウザ(JS)のゲームにも使える汎用ライブラリにするための計画(M7〜M12)
 
 ## ロードマップ
 M0 設計・仕様 → M1 サーバー → M2 クライアントの核 → M3 画面部品 → M4 ポコテンを置き換え → M5 ターン制(○×)と見本 → M6 文書(いまここまで完了)。
 詳細は [docs/migration.md](docs/migration.md)。
-次は **M7〜M12(汎用化)**: サーバー権威型(隠し情報)・再接続・JS クライアントを足し、hiro-hoshi-kazu.com の花札2作品を `netgame_fw` の上で動かす。計画は [docs/design-v2.md](docs/design-v2.md)。**M7(仕様)・M8(サーバー権威型 `authoritative`・部屋と進行の設定・入室失敗の制限)・M9(再接続: token・切断の猶予・`resume`・`presence`・休止からの復帰)は実装済み**。JS クライアント(M10)・花札への適用(M11〜M12)はこれから。
+次は **M7〜M12(汎用化)**: サーバー権威型(隠し情報)・再接続・JS クライアントを足し、hiro-hoshi-kazu.com の花札2作品を `netgame_fw` の上で動かす。計画は [docs/design-v2.md](docs/design-v2.md)。**M7(仕様)・M8(サーバー権威型 `authoritative`・部屋と進行の設定・入室失敗の制限)・M9(再接続: token・切断の猶予・`resume`・`presence`・休止からの復帰)・M10(JS クライアント `client-js/` と、Python との適合テスト)は実装済み**。花札への適用(M11〜M12)はこれから。
 
 ## ライセンス
 [Apache License 2.0](LICENSE)。**出典の記載が条件**になる(下の「出典の書き方」)。

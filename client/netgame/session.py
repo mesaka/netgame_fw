@@ -4,7 +4,8 @@ state:
   connecting → idle(接続した。名前待ち) → waiting(登録した。相手待ち) → ready(部屋が決まった。準備OK待ち)
   → playing(対戦中) → over(決着。チャットは続けられる) / closed(切断・失敗: error に理由)
 
-realtime と turns の両方を扱う。席(seat)・名簿(players)・順位(ranks)の形なので、3人以上でもそのまま使える
+realtime と turns の両方を扱う。v=2(NetSession(version=2))では、サーバー権威型(authoritative: act / state)・再接続(resume / presence)も扱う
+(画面部品 flow.py は v1 だけを使う。v=2 の使いかたは docs/client-js.md と同じ形の API)。席(seat)・名簿(players)・順位(ranks)の形なので、3人以上でもそのまま使える
 (3人以上の開始方法・途中退出の続行は、将来の拡張)。2人対戦向けに、opp_* の便利な窓口も用意してある。
 """
 from __future__ import annotations
@@ -12,16 +13,19 @@ from __future__ import annotations
 import json
 import time
 
-from .protocol import (CONNECT_TIMEOUT, FREE_TIME, IDLE_GRACE, LEAVE_TIMEOUT, MAX_CHAT, MAX_NAME, PAUSE_MAX,
-                       PING_INTERVAL, PASS_LEN, PROTOCOL_VERSION, RETRY_ERRORS, ROOM_LEN, clean_digits, rank_of,
-                       valid_ranks)
+from .protocol import (CONNECT_TIMEOUT, FREE_TIME, IDLE_GRACE, LEAVE_TIMEOUT, MAX_CHAT, MAX_NAME, MAX_PROTOCOL_VERSION,
+                       PAUSE_MAX, PING_INTERVAL, PASS_LEN, PROTOCOL_VERSION, RETRY_ERRORS, ROOM_LEN, clean_digits,
+                       clean_room_code, rank_of, valid_ranks)
 from .text import clean_text
 from .transport import Transport
 
 
 class NetSession:
-    def __init__(self, transport: Transport, game: str, clock=time.monotonic, default_name="相手"):
+    def __init__(self, transport: Transport, game: str, clock=time.monotonic, default_name="相手", version=PROTOCOL_VERSION):
+        if version not in range(PROTOCOL_VERSION, MAX_PROTOCOL_VERSION + 1):
+            raise ValueError("version は 1 か 2")
         self.t = transport
+        self.version = version                # 1(既定。realtime / turns)か 2(authoritative・再接続も)
         self.game = game
         self.clock = clock
         self.default_name = default_name      # 名前が空の人の表示名
@@ -68,6 +72,19 @@ class NetSession:
         self.chat = []                        # [(自分か, 名前, 本文)]
         self.chat_seen = 0                    # 画面が読んだ数
         self.sent_end_chat = False            # 決着後に、すでに1つチャットを送ったか
+        # v=2
+        self.token = ""                       # 再接続用の席の合言葉(authoritative)。画面には出さない
+        self.room_code = ""                   # 部屋コード(waiting / match / resumed で届く)
+        self.view = None                      # authoritative: いまの自分の view
+        self.view_seq = None
+        self.view_events = []                 # 直近の state の events
+        self.view_resync = False
+        self.views = []                       # [(seq, view, events, resync)] 届いた state(取り出すまでためる)
+        self.event_log = []                   # 中継された event([seat, k, d])の履歴(新しい対戦まで)
+        self.offline_seats = set()            # 切断中の席(presence)
+        self.errors = []                      # サーバーから届いたエラーコード(順に)
+        self.rule_errors = []                 # act が断られた理由(error: rule の d)
+        self.result_no = 0                    # result が届くたびに増える
         self.closing = False
         self._started = clock()
         self._last_send = clock()
@@ -147,7 +164,10 @@ class NetSession:
         self._last_send = self.clock()
 
     def start(self, url=""):
-        self.t.open(self.game, url)
+        if self.version == PROTOCOL_VERSION:
+            self.t.open(self.game, url)              # v1: これまでと同じ呼びかた
+        else:
+            self.t.open(self.game, url, self.version)
 
     def register(self, name, mode="random", settings=None, password=None, room=None):
         """名前を登録して、対戦相手をさがす。
@@ -160,7 +180,24 @@ class NetSession:
         msg = {"t": "register", "name": name, "mode": mode}
         if settings:
             msg["settings"] = settings
-        if mode == "friend":
+        if mode == "friend" and self.version >= 2:
+            rooms = self.config.get("rooms") or {}                # ゲームごとの設定: 部屋コードの形式・パスワードの要否
+            kind, pw = rooms.get("code", "digits6"), rooms.get("password", "required")
+            given = password is not None and str(password) != ""
+            p = clean_digits(password, PASS_LEN) if given else ""
+            if pw == "required" and not p or pw == "optional" and given and not p:
+                self.notice = "key"
+                return False
+            r = clean_room_code(room, kind) if room is not None else None
+            if room is not None and not r:
+                self.notice = "room"
+                return False
+            if pw != "none" and p:
+                msg["pass"] = p
+            if r:
+                msg["room"] = r
+            self.password, self.room_id = (p if pw != "none" else ""), r or ""
+        elif mode == "friend":
             p = clean_digits(password, PASS_LEN)
             r = clean_digits(room, ROOM_LEN) if room is not None else None
             if not p:
@@ -200,8 +237,32 @@ class NetSession:
 
     def send_event(self, kind, data=None):
         """realtime: ゲームのイベントを、他の席へ送る(登録のある kind だけ、サーバーが中継する)。"""
-        if self.state == "playing" and self.game_mode == "realtime":
+        if self.state == "playing" and (self.game_mode == "realtime" or self.version >= 2):   # v=2: スタンプなどは、どの方式でも
             self._send({"t": "event", "k": kind, "d": data if data is not None else {}})
+
+    def act(self, action=None):
+        """v=2 authoritative: 手を送る。結果は、サーバーから届く state(take_views)で受け取る。自分の盤面は、それまで変えない。"""
+        if self.version < 2 or self.state != "playing":
+            return False
+        self._send({"t": "act", "a": action if action is not None else {}})
+        return True
+
+    def resync(self):
+        """v=2: 自分の最新の view を、もう一度送ってもらう。"""
+        if self.version < 2 or self.state != "playing":
+            return False
+        self._send({"t": "resync"})
+        return True
+
+    def resume(self, room=None, token=None):
+        """v=2: 切れた席に、この接続で戻る(hello のあと = state が idle のとき)。room / token を省くと、いまの値を使う。
+        戻れたら resumed のあと、いまの状態(state など)が届く。戻れなければ state は idle に戻り、notice が "resume" になる。"""
+        room, token = room or self.room_code, token or self.token
+        if self.version < 2 or self.state != "idle" or not room or not token:
+            return False
+        self._send({"t": "resume", "room": str(room), "token": str(token)})
+        self.state = "resuming"
+        return True
 
     def send_action(self, data=None):
         """turns: 手を送る。手番でなければ送らない(False)。自分の盤面は、サーバーから届いた action で変える。"""
@@ -246,6 +307,11 @@ class NetSession:
 
     def take_events(self):
         out, self.events = self.events, []
+        return out
+
+    def take_views(self):
+        """v=2 authoritative: 届いた state を、古い順に全部返す: [(seq, view, events, resync)]。"""
+        out, self.views = self.views, []
         return out
 
     def take_actions(self):
@@ -318,7 +384,7 @@ class NetSession:
     def _on_hello(self, m):
         if self.state != "connecting":
             return
-        if m.get("v", PROTOCOL_VERSION) != PROTOCOL_VERSION:
+        if m.get("v", PROTOCOL_VERSION) != self.version:
             self.error, self.state = "version", "closed"
             return
         self.conn_id = str(m.get("id", ""))
@@ -326,9 +392,15 @@ class NetSession:
         self.limits = self.config.get("limits") or {}
         self.state = "idle"
 
+    def _on_registered(self, m):
+        if m.get("token"):
+            self.token = str(m["token"])
+
     def _on_waiting(self, m):
         if m.get("room") and self.mode == "friend":
             self.room_id = str(m["room"])
+        if m.get("room"):
+            self.room_code = str(m["room"])
 
     def _on_match(self, m):
         seed = int(m.get("seed", 0))
@@ -338,6 +410,10 @@ class NetSession:
         if self.state in ("ready", "playing") and seed == self.seed and players == self.players and you == self.seat:
             return                                            # 同じ組み合わせの match がもう一度届いても、準備OKなどの状態は変えない
         self.seat, self.players, self.seed = you, players, seed
+        if m.get("room"):
+            self.room_code = str(m["room"])
+        self.view, self.view_seq, self.view_events, self.view_resync = None, None, [], False
+        self.views, self.event_log, self.offline_seats = [], [], set()
         self.settings = m.get("settings") or self.settings
         self.game_mode = m.get("mode", "realtime")
         self.state = "ready"
@@ -374,7 +450,40 @@ class NetSession:
 
     def _on_event(self, m):
         if self.state == "playing":
-            self.events.append((int(m.get("seat", -1)), str(m.get("k", "")), m.get("d") if m.get("d") is not None else {}))
+            d = m.get("d") if m.get("d") is not None else {}
+            self.events.append((int(m.get("seat", -1)), str(m.get("k", "")), d))
+            self.event_log.append([int(m.get("seat", -1)), str(m.get("k", "")), d])
+
+    def _on_state(self, m):
+        if self.state != "playing":
+            return
+        self.view, self.view_seq = m.get("view"), m.get("seq")
+        self.view_events, self.view_resync = m.get("events") or [], bool(m.get("resync"))
+        self.views.append((self.view_seq, self.view, self.view_events, self.view_resync))
+
+    def _on_presence(self, m):
+        seat = int(m.get("seat", -1))
+        if m.get("online"):
+            self.offline_seats.discard(seat)
+        else:
+            self.offline_seats.add(seat)
+
+    def _on_resumed(self, m):
+        """再接続できた。席・名簿・部屋の状態を取り戻す(このあと、状態に応じて state / ready_state / result が届く)。"""
+        if self.state != "resuming":
+            return
+        lim = self.limits.get("name", MAX_NAME)
+        self.seat, self.seed = int(m.get("you", 0)), m.get("seed")
+        self.room_code = str(m.get("room", ""))
+        self.players = [{"seat": int(p.get("seat", i)), "name": clean_text(p.get("name", ""), lim) or self.default_name}
+                        for i, p in enumerate(m.get("players") or [])]
+        self.settings, self.game_mode = m.get("settings") or {}, m.get("mode", "realtime")
+        self.view, self.view_seq, self.view_events, self.view_resync = None, None, [], False
+        self.views, self.event_log, self.offline_seats = [], [], set()
+        self.ready_seats, self.paused_seats, self._paused_at = set(), set(), {}
+        self.left_seats, self.left_at, self.rematch_seats = set(), None, set()
+        self.state = {"waiting": "waiting", "ready": "ready", "playing": "playing", "over": "over"}.get(m.get("status"), "playing")
+        self.notice = None
 
     def _on_action(self, m):
         if self.state == "playing":
@@ -388,11 +497,16 @@ class NetSession:
         self.desync_seq = int(m.get("seq", 0))
 
     def _on_result(self, m):
-        if self.state not in ("ready", "playing"):
+        resumed_over = self.state == "over" and self.ranks is None         # 再接続で、終わった部屋に戻った
+        if self.state not in ("ready", "playing") and not resumed_over:
             return
-        self.state = "over"
+        self.result_no += 1
         self.ranks = m.get("ranks") or []
         self.why = m.get("why", "normal")
+        flow = self.config.get("flow") or {}
+        if self.game_mode == "authoritative" and flow.get("rematch") == "game" and self.why == "normal":
+            return                                              # 部屋は playing のまま。結果は通知だけで、そのあとも act できる
+        self.state = "over"
         self.paused_seats, self._paused_at = set(), {}
         self.over_since = self.last_op = self.clock()
         if self.why == "left":                                 # 2人対戦では、残りが勝つ。抜けたのは、自分以外
@@ -418,9 +532,39 @@ class NetSession:
 
     def _on_error(self, m):
         code = str(m.get("code", "server"))
+        self.errors.append(code)
+        if code == "rule":
+            self.rule_errors.append(m.get("d"))
+        if code == "resume":                                     # 戻れない(部屋がない・合言葉が違う・猶予切れ)
+            self.token, self.room_code = "", ""
+            if self.state == "resuming":
+                self.state, self.notice = "idle", "resume"
+            return
         if self.state == "waiting" and code in RETRY_ERRORS:
             self.state, self.notice = "idle", code             # 登録は受け付けられなかった。やり直せる
         elif code in ("game", "version"):
             self.error, self.state = code, "closed"
         elif self.state == "connecting":
             self.error = code
+
+    # ---- 状態の一覧(適合テストと、デバッグ用) ----
+    def snapshot(self) -> dict:
+        """JS 版 NetGameClient.snapshot() と同じ形の、いまの状態。2つのクライアントが同じ解釈をすることの確認に使う
+        (tests/conformance/)。token と部屋コードの中身は、含めない。"""
+        return {
+            "phase": self.state,
+            "seat": self.seat if self.players else None,
+            "players": [{"seat": p["seat"], "name": p["name"]} for p in self.players],
+            "room": "<room>" if self.room_code else None,
+            "hasToken": bool(self.token),
+            "seq": self.view_seq,
+            "view": self.view,
+            "events": self.view_events,
+            "resync": self.view_resync,
+            "relayed": [list(e) for e in self.event_log],
+            "result": {"ranks": self.ranks, "why": self.why} if self.ranks is not None else None,
+            "offline": sorted(self.offline_seats),
+            "chat": [{"mine": mine, "name": name, "text": text} for mine, name, text in self.chat],
+            "errors": list(self.errors),
+            "ruleErrors": list(self.rule_errors),
+        }

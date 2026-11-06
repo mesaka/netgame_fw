@@ -1,13 +1,15 @@
-"""通信プロトコル v1 の定数と、入力の検査(pygame非依存)。仕様は docs/protocol.md。"""
+"""通信プロトコルの定数と、入力の検査(pygame非依存)。仕様は docs/protocol.md(v1 と、追加の v2)。"""
 from __future__ import annotations
 
-PROTOCOL_VERSION = 1
+PROTOCOL_VERSION = 1              # 既定の版(v1)。サーバー権威型(authoritative)は v=2: NetSession(version=2)
+MAX_PROTOCOL_VERSION = 2
 
 # 制限の既定(サーバーが hello の config.limits で知らせる値のほうが優先)
 MAX_NAME = 8                     # プレイヤーネーム(全角8文字まで)
 MAX_CHAT = 30                    # チャット(全角30文字まで)
 PASS_LEN = 4                     # ルームのパスワード(4桁の数字)
-ROOM_LEN = 6                     # ルームID(サーバーが発行する6桁の数字)
+ROOM_LEN = 6                     # ルームID(サーバーが発行する6桁の数字。v=2 のゲームは hello の config.rooms.code で決まる)
+ROOM_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"   # 4文字の部屋コード(alnum4)に使う文字(紛らわしい文字を除く)
 
 # 時間(秒)
 CONNECT_TIMEOUT = 12.0           # 接続できるまで待つ
@@ -21,6 +23,15 @@ COUNTDOWN_SECONDS = 5            # 全員が準備OKを押してから始まる�
 
 # 登録に関するエラー(登録されないまま、やり直せる)
 RETRY_ERRORS = ("name", "key", "room", "pass")
+
+
+def clean_room_code(s, kind="digits6") -> str:
+    """部屋コードの形が正しければ(alnum4 は大文字にして)そのまま、違えば ""。"""
+    s = str(s)
+    if kind == "alnum4":
+        s = s.upper()
+        return s if len(s) == 4 and all(ch in ROOM_CHARS for ch in s) else ""
+    return clean_digits(s, ROOM_LEN)
 
 
 def clean_digits(s, n) -> str:
