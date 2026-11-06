@@ -85,12 +85,12 @@ tests/       クライアント(pytest)のテスト。tests/conformance/ は、J
 - [docs/ui.md](docs/ui.md) — 画面部品(`NetGameScene`・`Theme`・`Strings`・`Layout`)の使い方
 - [docs/migration.md](docs/migration.md) — ポコテンから移す手順(M0〜M6)と、現在の通信との対応表
 - [docs/client-js.md](docs/client-js.md) — **JS クライアント**(ブラウザ用。使いかた・再接続・適合テスト)。Python の v=2 の使いかたも
-- [docs/design-v2.md](docs/design-v2.md) — **v2 の設計と計画(M10 まで実装済み)**: サーバー権威型・再接続・JS クライアント(正式)・部屋コード設定。ブラウザ(JS)のゲームにも使える汎用ライブラリにするための計画(M7〜M12)
+- [docs/design-v2.md](docs/design-v2.md) — **v2 の設計と計画(M12 まで実装済み)**: サーバー権威型・再接続・JS クライアント(正式)・部屋コード設定。ブラウザ(JS)のゲームにも使える汎用ライブラリにするための計画(M7〜M12)
 
 ## ロードマップ
 M0 設計・仕様 → M1 サーバー → M2 クライアントの核 → M3 画面部品 → M4 ポコテンを置き換え → M5 ターン制(○×)と見本 → M6 文書(いまここまで完了)。
 詳細は [docs/migration.md](docs/migration.md)。
-次は **M7〜M12(汎用化)**: サーバー権威型(隠し情報)・再接続・JS クライアントを足し、hiro-hoshi-kazu.com の花札2作品を `netgame_fw` の上で動かす。計画は [docs/design-v2.md](docs/design-v2.md)。**M7(仕様)・M8(サーバー権威型 `authoritative`・部屋と進行の設定・入室失敗の制限)・M9(再接続: token・切断の猶予・`resume`・`presence`・休止からの復帰)・M10(JS クライアント `client-js/` と、Python との適合テスト)は実装済み**。花札への適用(M11〜M12)はこれから。
+次は **M7〜M12(汎用化)**: サーバー権威型(隠し情報)・再接続・JS クライアントを足し、hiro-hoshi-kazu.com の花札2作品を `netgame_fw` の上で動かす。計画は [docs/design-v2.md](docs/design-v2.md)。**M7(仕様)・M8(サーバー権威型 `authoritative`・部屋と進行の設定・入室失敗の制限)・M9(再接続: token・切断の猶予・`resume`・`presence`・休止からの復帰)・M10(JS クライアント `client-js/` と、Python との適合テスト)・M11〜M12(hiro-hoshi-kazu.com の花札2作品=こいこい・花合わせが、この上で動く。旧版の PartyServer は撤去)は実装済み**。実際の使いかたの例は、[mesaka/hiro-hoshi-kazu-web](https://github.com/mesaka/hiro-hoshi-kazu-web) の `src/awase-netgame.js` / `src/koikoi-netgame.js`(アダプター各約40行)と `public/js/net-ng.js`(ブラウザ側)。
 
 ## ライセンス
 [Apache License 2.0](LICENSE)。**出典の記載が条件**になる(下の「出典の書き方」)。
