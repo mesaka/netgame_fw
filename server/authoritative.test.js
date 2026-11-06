@@ -2,7 +2,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { setup } from "./testkit.js";
-import { NetGameCore } from "./core.js";
+import { NetGameCore, hashClientKey } from "./core.js";
 
 import cards from "../examples/cards/adapter.js";
 const framed = {                      // ready あり・結果のあとはフレームワークの rematch
@@ -327,4 +327,35 @@ test("seq・乱数の位置・通知済みフラグは、状態といっしょ�
   assert.equal(a.all("result").length, 1);
   new NetGameCore(env.core.host, GAMES).onMessage(a, JSON.stringify({ t: "act", a: { type: "draw" } }));   // 終わったあとの手でも、結果は送り直さない
   assert.equal(a.all("result").length, 1);
+});
+
+test("入室失敗の記録: 最後の失敗から1時間たったら数え直し。期限を過ぎた記録は、戻ってこなくても消える", () => {
+  const env = setup(GAMES);
+  const fail = (key) => { const w = env.open("cards", { ...V2, clientKey: key }); env.say(w, { t: "register", name: "ぬ", mode: "friend", room: "ZZZZ" }); return w; };
+  // 4回失敗 → 1時間+1ms → また4回: 合計8回でも、ブロックされない(数え直されるので)
+  for (let i = 0; i < 4; i++) fail("aaaa");
+  env.tick(3600001);
+  let last;
+  for (let i = 0; i < 4; i++) last = fail("aaaa");
+  assert.equal(last.last("error").code, "room");
+  // 期限を過ぎた記録は、ほかの接続元の失敗のときに、一緒に消える(戻ってこない接続元の記録が、残り続けない)
+  fail("bbbb");
+  env.tick(3600001);
+  fail("cccc");
+  const keys = [...env.store.keys()].filter((k) => k.startsWith("jf:"));
+  assert.deepEqual(keys, ["jf:cccc"]);
+  assert.deepEqual(JSON.parse(env.store.get("jfq")).map(([k]) => k), ["jf:cccc"]);
+  // 1時間のうちなら、続けて数える(5回でブロック)
+  const blocked = (() => { let w; for (let i = 0; i < 5; i++) w = fail("dddd"); env.tick(1000); return fail("dddd"); })();
+  assert.equal(blocked.last("error").code, "rate");
+});
+
+test("hashClientKey: 生の接続元を含まない16桁の16進。同じ入力なら同じ、接続元や salt が違えば違う。接続元がなければ undefined", async () => {
+  const a = await hashClientKey("203.0.113.7", "salt-1");
+  assert.match(a, /^[0-9a-f]{16}$/);
+  assert.equal(a, await hashClientKey("203.0.113.7", "salt-1"));
+  assert.notEqual(a, await hashClientKey("203.0.113.8", "salt-1"));
+  assert.notEqual(a, await hashClientKey("203.0.113.7", "salt-2"));
+  assert.equal(await hashClientKey(null, "salt-1"), undefined);
+  assert.equal(await hashClientKey("", "salt-1"), undefined);
 });

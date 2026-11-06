@@ -4,7 +4,7 @@
 // 流れ: 接続(hello)→ register(名前・ランダム/ルーム)→ 部屋が決まる(match)→ 全員 ready → start → 対戦 → result → rematch / 退出。
 // realtime: ゲームが登録したイベント(event)を中継する。turns: 手番・通し番号・ハッシュの突き合わせをサーバーが行う。
 // authoritative(v=2): ルールと状態をサーバーが持ち(adapter.game の init / apply / view / outcome)、各席にその席の view だけを送る。
-// 状態: kv の "state:<ルームID>"(JSON)。乱数の位置は部屋の記録の rngState。入室失敗の記録は "jf:<接続元>"。
+// 状態: kv の "state:<ルームID>"(JSON)。乱数の位置は部屋の記録の rngState。入室失敗の記録は "jf:<接続元のハッシュ>"(最後の失敗から joinWindowMs で消える)。
 //
 // 状態の置き場所:
 //   ソケットごとの付属情報(attachment): { id, game, state: "new"|"queued"|"room", name, roomId, seat, matchKey, since, lastChat }
@@ -22,10 +22,18 @@ export const DEFAULT_LIMITS = {
   passFails: 5,        // パスワードを間違えられる回数(超えるとその部屋は閉じる)
   joinFails: 5,        // 部屋に入る失敗(部屋がない・違うパスワード)を重ねられる回数(超えると joinBlockMs のあいだ入れない)
   joinBlockMs: 60000,  //   〃 入れなくなる時間
+  joinWindowMs: 3600000, // 失敗の記録を覚えておく時間(最後の失敗から。過ぎたら数え直し・記録も消す)
 };
 const PASS_RE = /^[0-9]{4}$/;
 const ROOM_RE = { digits6: /^[0-9]{6}$/, alnum4: /^[A-HJ-NP-Z2-9]{4}$/ };
 const ID_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 紛らわしい文字(I O 0 1)を除く
+
+/** 接続元(IP アドレスなど)を、入室失敗の記録に使う短いハッシュにする(生の IP は保存しない)。salt は、サーバー側だけが持つ値。 */
+export async function hashClientKey(ip, salt) {
+  if (!ip) return undefined;
+  const d = await globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${salt}:${ip}`));
+  return Array.from(new Uint8Array(d).slice(0, 8), (b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 export class NetGameCore {
   /**
@@ -225,15 +233,30 @@ export class NetGameCore {
   // 部屋に入る失敗の記録(rooms.joinLimit)。clientKey があれば kv に(接続し直しても続く)、なければ接続ごとに持つ。
   _joinGet(ws) {
     const me = this._att(ws);
-    if (me.ck) { const v = this.host.kv.get("jf:" + me.ck); return v ? JSON.parse(v) : { n: 0, until: 0 }; }
-    return { n: me.jf || 0, until: me.ju || 0 };
+    const win = this._limits(this.games[me.game]).joinWindowMs;
+    let st = { n: me.jf || 0, until: me.ju || 0, at: me.ja || 0 };
+    if (me.ck) { const v = this.host.kv.get("jf:" + me.ck); st = v ? JSON.parse(v) : { n: 0, until: 0, at: 0 }; }
+    const now = this._now();
+    if (st.at && now - st.at > win && st.until <= now) st = { n: 0, until: 0, at: 0 };      // 最後の失敗から時間がたったので、数え直す
+    return st;
   }
   _joinPut(ws, st) {
     const me = this._att(ws);
     if (me.ck) {
-      if (st.n === 0 && !st.until) this.host.kv.delete("jf:" + me.ck);
-      else this.host.kv.put("jf:" + me.ck, JSON.stringify(st));
-    } else this._set(ws, { jf: st.n, ju: st.until });
+      const key = "jf:" + me.ck;
+      const idx = JSON.parse(this.host.kv.get("jfq") || "[]").filter(([k]) => k !== key);
+      if (st.n === 0 && !st.until) this.host.kv.delete(key);
+      else {
+        const now = this._now();
+        const win = this._limits(this.games[me.game]).joinWindowMs;
+        this.host.kv.put(key, JSON.stringify({ ...st, at: now }));
+        idx.push([key, now]);
+        for (let i = idx.length - 1; i >= 0; i--) {              // 記録を覚えておく時間を過ぎたものは、消す(接続元が戻ってこなくても、残らない)
+          if (now - idx[i][1] > win) { this.host.kv.delete(idx[i][0]); idx.splice(i, 1); }
+        }
+      }
+      this.host.kv.put("jfq", JSON.stringify(idx));
+    } else this._set(ws, { jf: st.n, ju: st.until, ja: this._now() });
   }
   /** 入れない時間の最中なら error(rate) を返して true */
   _joinBlocked(ws) {
