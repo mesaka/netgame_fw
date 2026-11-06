@@ -11,12 +11,14 @@
 // いまは、組み合わせも部屋も、1つの Durable Object(Hub)で動かす。部屋の記録は、その DO のストレージ(kv)に置く。
 // (部屋ごとの Durable Object に分けるのは、規模が必要になってから。docs/design.md 3.3)
 import { DurableObject } from "cloudflare:workers";
-import { NetGameCore, hashClientKey } from "./core.js";
+import { NetGameCore, hashClientKey, purgeLegacyJoinKeys } from "./core.js";
 
 export function createGameWorker(games, { binding = "HUB", instance = "main" } = {}) {
   class Hub extends DurableObject {
     constructor(ctx, env) {
       super(ctx, env);
+      // 古い版が生の IP をキーに残した、入室失敗の記録を、一度だけ消す(更新した最初の起動で)
+      try { purgeLegacyJoinKeys(this.ctx.storage.kv); } catch (e) { console.error("purgeLegacyJoinKeys:", e); }
       this.core = new NetGameCore({
         sockets: () => this.ctx.getWebSockets(),
         now: () => Date.now(),
