@@ -4,7 +4,7 @@
   PC(ネイティブ)    ... `pip install websockets` が入っていれば、別スレッドで動かす。
 接続先: ブラウザは、同じサイトの /ws(ページのURLに ?server=wss://… を付けると変えられる)。
         PCは、環境変数 NETGAME_SERVER(既定: ws://localhost:8787/ws。`npx wrangler dev` の既定ポート)。
-どちらも、`?game=<ゲームID>&v=1` を付けて接続する。
+どちらも、`?game=<ゲームID>&v=<版>` を付けて接続する(版は NetSession(version=…)。既定は 1)。
 """
 from __future__ import annotations
 
@@ -23,8 +23,8 @@ class Transport:
     state = "closed"
     opened = False                  # 一度でも接続できたか(できないまま閉じたら「接続できない」)
 
-    def open(self, game: str, url: str = ""):
-        """game に接続する。url が空なら、既定の接続先。"""
+    def open(self, game: str, url: str = "", version: int = PROTOCOL_VERSION):
+        """game に接続する。url が空なら、既定の接続先。version は、プロトコルの版(v=2 の authoritative など)。"""
         raise NotImplementedError
 
     def send(self, text: str):
@@ -38,16 +38,16 @@ class Transport:
         raise NotImplementedError
 
 
-def query_for(game: str) -> str:
-    return "game=%s&v=%d" % (game, PROTOCOL_VERSION)
+def query_for(game: str, version: int = PROTOCOL_VERSION) -> str:
+    return "game=%s&v=%d" % (game, version)
 
 
 class WebTransport(Transport):
     def __init__(self):
         self.js = bridge()
 
-    def open(self, game, url=""):
-        self.js.open(url, query_for(game))
+    def open(self, game, url="", version=PROTOCOL_VERSION):
+        self.js.open(url, query_for(game, version))
 
     @property
     def state(self):
@@ -81,10 +81,10 @@ class ThreadTransport(Transport):
         self._out = queue.Queue()
         self._stop = threading.Event()
 
-    def open(self, game, url=""):
+    def open(self, game, url="", version=PROTOCOL_VERSION):
         self.state = "connecting"
         base = url or os.environ.get("NETGAME_SERVER", NATIVE_URL)
-        full = base + ("&" if "?" in base else "?") + query_for(game)
+        full = base + ("&" if "?" in base else "?") + query_for(game, version)
         self._threading.Thread(target=self._run, args=(full,), daemon=True).start()
 
     def _run(self, url):

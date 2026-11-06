@@ -22,6 +22,8 @@ export function createGameWorker(games, { binding = "HUB", instance = "main" } =
         now: () => Date.now(),
         random: () => Math.random(),
         kv: this.ctx.storage.kv,
+        setAlarm: (t) => { this.ctx.storage.setAlarm(t); },        // 切断の猶予(再接続)の期限
+        deleteAlarm: () => { this.ctx.storage.deleteAlarm(); },
       }, games);
       // 生存確認の "ping" には、Durable Object を起こさずに "pong" を返す
       this.ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
@@ -32,8 +34,16 @@ export function createGameWorker(games, { binding = "HUB", instance = "main" } =
       const pair = new WebSocketPair();
       const [client, server] = Object.values(pair);
       this.ctx.acceptWebSocket(server);
-      this.core.onOpen(server, { game: url.searchParams.get("game"), v: url.searchParams.get("v") ?? undefined });
+      // clientKey: 接続元の見分け(入室失敗の制限 rooms.joinLimit 用)。Cloudflare が付ける接続元 IP
+      this.core.onOpen(server, {
+        game: url.searchParams.get("game"), v: url.searchParams.get("v") ?? undefined,
+        clientKey: request.headers.get("CF-Connecting-IP") ?? undefined,
+      });
       return new Response(null, { status: 101, webSocket: client });
+    }
+
+    alarm() {
+      this.core.onAlarm();
     }
 
     webSocketMessage(ws, message) {

@@ -16,11 +16,14 @@ export function setup(games, { random } = {}) {
   const socks = [];
   const store = new Map();
   let now = 1000;
+  let alarm = null;      // host.setAlarm で予約された時刻(なければ null)
   // Workers の getWebSockets() は、毎回別のオブジェクトを返す。実際と同じに、Proxy で包んで返す
   const host = {
     sockets: () => socks.map((w) => new Proxy(w, {})),
     now: () => now,
     random: random || Math.random,
+    setAlarm: (t) => { alarm = t; },
+    deleteAlarm: () => { alarm = null; },
     kv: { get: (k) => store.get(k), put: (k, v) => store.set(k, v), delete: (k) => store.delete(k) },
   };
   const core = new NetGameCore(host, games);
@@ -33,6 +36,8 @@ export function setup(games, { random } = {}) {
   const say = (w, o) => core.onMessage(w, JSON.stringify(o));
   const close = (w) => { core.onClose(w); socks.splice(socks.indexOf(w), 1); };
   const tick = (ms) => { now += ms; };
+  /** 予約された時刻まで時計を進めて、アラームを鳴らす(Durable Object の alarm() に当たる) */
+  const fireAlarm = () => { if (alarm === null) return false; if (alarm > now) now = alarm; alarm = null; core.onAlarm(); return true; };
   const rooms = () => [...store.keys()].filter((k) => k.startsWith("room:"));
-  return { core, open, say, close, tick, socks, store, rooms };
+  return { core, open, say, close, tick, socks, store, rooms, fireAlarm, alarm: () => alarm };
 }

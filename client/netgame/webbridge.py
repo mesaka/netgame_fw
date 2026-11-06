@@ -172,6 +172,21 @@ def storage_set(key, value):
             pass
 
 
+class WebStorage:
+    """NetSession の storage に渡せる、ブラウザの保存(localStorage。pygbag 用)。dict のように get / [key] = value / pop が使える。
+    ブラウザ以外では何も保存しない(PC では、dict や、自分で作った保存先を渡す)。消すときは、空の文字列を書く(空は「なし」とみなす)。"""
+
+    def get(self, key, default=None):
+        return storage_get(key) or default
+
+    def __setitem__(self, key, value):
+        storage_set(key, value)
+
+    def pop(self, key, default=None):
+        storage_set(key, "")
+        return default
+
+
 def copy_text(text) -> bool:
     """クリップボードにコピーする。できたら True。"""
     try:

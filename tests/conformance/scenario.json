@@ -1,0 +1,189 @@
+{
+  "_comment": "適合テストのシナリオ。JS クライアント(client-js/conformance.test.js)と Python クライアント(tests/test_conformance.py)が、同じ手順を、同じサーバー核(examples/cards)に実行し、各ステップのあとの snapshot() が golden.json と一致することを確かめる。$hand0 = その人の view.hand[0]、$room:x = x の部屋コード。drop = クライアントから接続を閉じる(自動再接続しない)/ netDrop = 通信が途切れた(自動再接続する)/ awaitReconnect = 再接続の待ち時間が過ぎて、つなぎ直す(時計は両クライアントとも差し替えてある)/ expect:false = クライアントが送らずに断る。 connect の storage = 保存先を共有するクライアント名(ページを開き直した想定)/ resumeSaved = 保存した token で戻る / leave = 部屋を出る。",
+  "game": "cards",
+  "v": 2,
+  "steps": [
+    {
+      "who": "a",
+      "do": "connect"
+    },
+    {
+      "who": "b",
+      "do": "connect"
+    },
+    {
+      "who": "a",
+      "do": "registerRandom",
+      "name": "あ"
+    },
+    {
+      "who": "b",
+      "do": "registerRandom",
+      "name": "い"
+    },
+    {
+      "who": "a",
+      "do": "act",
+      "a": {
+        "type": "play",
+        "n": "$hand0"
+      }
+    },
+    {
+      "who": "a",
+      "do": "act",
+      "a": {
+        "type": "play",
+        "n": 99
+      }
+    },
+    {
+      "who": "a",
+      "do": "event",
+      "k": "stamp",
+      "d": {
+        "id": 2
+      }
+    },
+    {
+      "who": "b",
+      "do": "chat",
+      "text": "こんにちは"
+    },
+    {
+      "who": "a",
+      "do": "drop"
+    },
+    {
+      "who": "b",
+      "do": "act",
+      "a": {
+        "type": "play",
+        "n": "$hand0"
+      }
+    },
+    {
+      "who": "a2",
+      "do": "connect"
+    },
+    {
+      "who": "a2",
+      "do": "resume",
+      "from": "a"
+    },
+    {
+      "who": "a2",
+      "do": "playAll"
+    },
+    {
+      "who": "b",
+      "do": "playAll"
+    },
+    {
+      "who": "a2",
+      "do": "act",
+      "a": {
+        "type": "again"
+      }
+    },
+    {
+      "who": "b",
+      "do": "netDrop"
+    },
+    {
+      "who": "b",
+      "do": "awaitReconnect"
+    },
+    {
+      "who": "b",
+      "do": "act",
+      "a": {
+        "type": "play",
+        "n": "$hand0"
+      }
+    },
+    {
+      "who": "e",
+      "do": "connect"
+    },
+    {
+      "who": "e",
+      "do": "registerFriend",
+      "name": "お",
+      "room": "ZZZZ"
+    },
+    {
+      "who": "e",
+      "do": "registerRandom",
+      "name": "",
+      "expect": false
+    },
+    {
+      "who": "e",
+      "do": "registerFriend",
+      "name": "お",
+      "room": "abc",
+      "pass": "12"
+    },
+    {
+      "who": "f",
+      "do": "connect"
+    },
+    {
+      "who": "f",
+      "do": "registerFriend",
+      "name": "か"
+    },
+    {
+      "who": "f",
+      "do": "drop"
+    },
+    {
+      "who": "f2",
+      "do": "connect",
+      "storage": "f"
+    },
+    {
+      "who": "f2",
+      "do": "resumeSaved"
+    },
+    {
+      "who": "f2",
+      "do": "leave"
+    },
+    {
+      "who": "c",
+      "do": "connect"
+    },
+    {
+      "who": "d",
+      "do": "connect"
+    },
+    {
+      "who": "c",
+      "do": "registerFriend",
+      "name": "う"
+    },
+    {
+      "who": "d",
+      "do": "registerFriend",
+      "name": "え",
+      "room": "$room:c"
+    },
+    {
+      "who": "c",
+      "do": "netDrop"
+    },
+    {
+      "do": "tick",
+      "ms": 4000
+    },
+    {
+      "do": "alarm"
+    },
+    {
+      "who": "c",
+      "do": "awaitReconnect"
+    }
+  ]
+}
