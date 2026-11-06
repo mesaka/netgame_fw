@@ -28,13 +28,15 @@ export class NetGameClient {
    * @param {number} [o.v=2]      プロトコルの版(authoritative は 2)
    * @param {Storage} [o.storage] token と部屋コードの保存先(localStorage など。省略するとメモリだけ。ページを開き直しての再接続には要る)
    * @param {object} [o.reconnect] { minMs, maxMs, factor, giveUpMs } 自動再接続。false で無効
+   * @param {object} [o.timer] { set(fn, ms) → ハンドル, clear(ハンドル), now() } 再接続の待ち時間に使う時計(テスト用。省略時は setTimeout / Date.now)
    * @param {Function} [o.WebSocket] WebSocket のコンストラクター(省略時はグローバル)
    */
-  constructor({ url, game, v = 2, storage = null, reconnect = {}, WebSocket: WS = globalThis.WebSocket, defaultName = "相手" } = {}) {
+  constructor({ url, game, v = 2, storage = null, reconnect = {}, WebSocket: WS = globalThis.WebSocket, defaultName = "相手", timer = null } = {}) {
     if (!url || !game) throw new Error("url と game が要ります");
     if (!WS) throw new Error("WebSocket がありません(Node 22 未満なら、WebSocket オプションに ws などを渡す)");
     Object.assign(this, { url, game, v, storage, WS, defaultName });
     this.reconnectOpts = reconnect === false ? null : { ...RECONNECT, ...reconnect };
+    this.timer = timer || { set: (fn, ms) => { const h = setTimeout(fn, ms); h.unref?.(); return h; }, clear: (h) => clearTimeout(h), now: () => Date.now() };
     this._handlers = new Map();
     this._queue = Promise.resolve();
     this._ws = null;
@@ -166,22 +168,21 @@ export class NetGameClient {
     if (this._closing) return this._finishClose(null);
     const canResume = this.reconnectOpts && this.token && this.room && !["closed", "connecting"].includes(this.phase);
     if (canResume) {
-      if (!this._lostAt) this._lostAt = Date.now();
-      if (Date.now() - this._lostAt > this.reconnectOpts.giveUpMs) return this._finishClose("lost");
+      if (!this._lostAt) this._lostAt = this.timer.now();
+      if (this.timer.now() - this._lostAt > this.reconnectOpts.giveUpMs) return this._finishClose("lost");
       this._resuming = { room: this.room, token: this.token };
       this._setStatus("reconnecting");
       const o = this.reconnectOpts;
       const delay = Math.min(o.maxMs, o.minMs * o.factor ** this._tries) * (0.75 + Math.random() * 0.5);
       this._tries += 1;
-      this._timers.retry = setTimeout(() => { if (!this._closing) this._open(); }, delay);
-      this._timers.retry.unref?.();
+      this._timers.retry = this.timer.set(() => { if (!this._closing) this._open(); }, delay);
       return undefined;
     }
     return this._finishClose(this._opened ? "lost" : "connect");
   }
 
   _finishClose(error) {
-    clearTimeout(this._timers.retry);
+    this.timer.clear(this._timers.retry);
     if (error && !this.error) this.error = error;
     this.phase = "closed";
     this._setStatus("closed");
@@ -193,7 +194,7 @@ export class NetGameClient {
   /** 接続を閉じる(自動再接続はしない)。サーバーからは「切断」に見える(猶予のあいだは席が残る)。部屋を出るなら leave()。 */
   close() {
     this._closing = true;
-    clearTimeout(this._timers.retry);
+    this.timer.clear(this._timers.retry);
     clearInterval(this._timers.ping);
     const ws = this._ws;
     this._ws = null;
@@ -203,6 +204,7 @@ export class NetGameClient {
 
   // ---- 送信 ----
   _send(obj) {
+    if (this.status === "reconnecting") return false;     // 再接続のあいだ(hello が届くまで)は、何も送らない。古い盤面への操作になる
     const text = JSON.stringify(obj);
     const ws = this._ws;
     if (ws && ws.readyState === 1) { ws.send(text); return true; }

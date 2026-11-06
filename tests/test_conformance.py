@@ -84,6 +84,12 @@ class HostTransport(Transport):
 def run_scenario(host):
     sc = json.loads((DIR / "scenario.json").read_text(encoding="utf-8"))
     sessions, live, log = {}, set(), []
+    clk = {"t": 0.0}                                    # 差し替えた時計(再接続の待ち時間を、テストが進める)
+    made = {"n": 0}
+
+    def new_transport(who):
+        made["n"] += 1
+        return HostTransport(host, "p%s%d" % (who, made["n"]))
 
     def settle():
         for _ in range(2):
@@ -100,16 +106,20 @@ def run_scenario(host):
     for i, st in enumerate(sc["steps"]):
         who, do = st.get("who"), st["do"]
         s = sessions.get(who)
+        expect = st.get("expect", True)
         if do == "connect":
-            s = NetSession(HostTransport(host, "p" + who), sc["game"], version=sc["v"])
+            s = NetSession(new_transport(who), sc["game"], version=sc["v"], clock=lambda: clk["t"],
+                           transport_factory=lambda who=who: new_transport(who))
             sessions[who] = s
             live.add(who)
             s.start()
         elif do == "registerRandom":
-            assert s.register(st["name"], mode="random")
+            assert s.register(st["name"], mode="random") == expect
         elif do == "registerFriend":
-            room = sessions[st["room"].split(":")[1]].room_code if st.get("room") else None
-            assert s.register(st["name"], mode="friend", room=room)
+            room = st.get("room")
+            if room and room.startswith("$room:"):
+                room = sessions[room.split(":")[1]].room_code
+            assert s.register(st["name"], mode="friend", room=room, password=st.get("pass")) == expect
         elif do == "act":
             assert s.act(resolve(who, st["a"]))
         elif do == "event":
@@ -119,6 +129,16 @@ def run_scenario(host):
         elif do == "drop":
             s.close()
             live.discard(who)
+        elif do == "netDrop":
+            s.t.close()                                 # 通信が途切れた(session が気づいて、自動再接続の待ちに入る)
+        elif do == "awaitReconnect":
+            s.update()
+            assert s.status == "reconnecting"
+            for _ in range(50):
+                if s.status == "open" and s.state not in ("resuming", "connecting"):
+                    break
+                clk["t"] += 20.0
+                settle()
         elif do == "resume":
             f = sessions[st["from"]]
             assert s.resume(f.room_code, f.token)

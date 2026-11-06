@@ -18,10 +18,22 @@ const settle = async (clients) => {
   }
 };
 
+/** 再接続の待ち時間を、テストが決めた時に発火させるための時計(setTimeout の代わり) */
+function manualTimer() {
+  const pending = new Set();
+  return {
+    set: (fn) => { const h = { fn }; pending.add(h); return h; },
+    clear: (h) => pending.delete(h),
+    now: () => 0,
+    fire() { for (const h of [...pending]) { pending.delete(h); h.fn(); } },
+  };
+}
+
 export async function runScenario() {
   const world = makeWorld();
   const WS = coreSocketClass(world);
   const clients = new Map();
+  const timers = new Map();
   const live = new Set();
   const resolve = (who, v) => {
     if (typeof v === "string" && v === "$hand0") return clients.get(who).view.hand[0];
@@ -33,17 +45,26 @@ export async function runScenario() {
     const c = clients.get(s.who);
     switch (s.do) {
       case "connect": {
-        const n = new NetGameClient({ url: "ws://world/ws", game: scenario.game, v: scenario.v, WebSocket: WS, reconnect: false });
-        clients.set(s.who, n); live.add(s.who);
+        const timer = manualTimer();
+        const n = new NetGameClient({ url: "ws://world/ws", game: scenario.game, v: scenario.v, WebSocket: WS, timer });
+        clients.set(s.who, n); timers.set(s.who, timer); live.add(s.who);
         await n.connect();
         break;
       }
-      case "registerRandom": c.registerRandom({ name: s.name }); break;
-      case "registerFriend": c.registerFriend({ name: s.name, room: s.room ? clients.get(s.room.split(":")[1]).room : undefined }); break;
-      case "act": c.act(resolve(s.who, s.a)); break;
+      case "registerRandom": assert.equal(c.registerRandom({ name: s.name }), s.expect ?? true); break;
+      case "registerFriend":
+        assert.equal(c.registerFriend({ name: s.name, pass: s.pass, room: s.room?.startsWith("$room:") ? clients.get(s.room.split(":")[1]).room : s.room }), s.expect ?? true);
+        break;
+      case "act": assert.ok(c.act(resolve(s.who, s.a))); break;
       case "event": c.event(s.k, s.d); break;
       case "chat": c.say(s.text); break;
       case "drop": c.close(); live.delete(s.who); break;
+      case "netDrop": c._ws._drop(); break;                           // 通信が途切れた(自動再接続の待ちに入る)
+      case "awaitReconnect":
+        assert.equal(c.status, "reconnecting");
+        timers.get(s.who).fire();
+        for (let k = 0; k < 50 && !(c.status === "open" && !["resuming", "connecting"].includes(c.phase)); k++) await settle(clients);
+        break;
       case "resume": { const f = clients.get(s.from); c.resume({ room: f.room, token: f.token }); break; }
       case "playAll":
         for (const n of [...c.view.hand]) { c.act({ type: "play", n }); await settle(clients); }

@@ -186,3 +186,36 @@ test("cleanText は、サーバーの cleanText と同じ結果になる", () =>
     for (const n of [3, 8, 30]) assert.equal(cleanText(s, n), serverCleanText(s, n));
   }
 });
+
+test("再接続: つなぎ直した接続も、hello が届くまでは何も送らない(古い盤面への操作を、新しい接続に送らない)", async () => {
+  const pending = [];
+  const timer = { set: (fn) => { pending.push(fn); return fn; }, clear: () => {}, now: () => 0 };
+  const e = env();
+  const a = e.make({ storage: null, timer });
+  const b = e.make({ storage: null });
+  await a.connect(); await b.connect();
+  a.registerRandom({ name: "あ" }); b.registerRandom({ name: "い" });
+  await until(() => a.view && b.view);
+  a._ws._drop();
+  await until(() => a.status === "reconnecting" && pending.length === 1);
+  pending.shift()();                                                // 待ち時間が過ぎて、新しい接続を開く
+  assert.equal(a.status, "reconnecting");
+  assert.equal(a.act({ type: "play", n: 1 }), false);              // 開いた直後(hello 前)
+  assert.equal(a.say("やあ"), false);
+  await until(() => a.status === "open" && a.phase === "playing");
+  assert.equal(b.relayed.length + b.chat.length, 0);               // 何も届いていない
+  assert.ok(a.act({ type: "play", n: a.view.hand[0] }));
+});
+
+test("登録: 名前が空なら送らない。合言葉・部屋コードは検査せず、そのまま送る(サーバーが断れば、エラーで返って、やり直せる)", async () => {
+  const e = env();
+  const c = e.make({ storage: null });
+  await c.connect();
+  assert.equal(c.registerRandom({ name: "  " }), false);
+  assert.equal(c.phase, "idle");
+  assert.equal(c.registerFriend({ name: "あ", room: "abc", pass: "12" }), true);
+  assert.equal(c.phase, "waiting");
+  await until(() => c.phase === "idle");
+  assert.deepEqual(c.errors, ["room"]);
+  assert.equal(c.registerFriend({ name: "あ" }), true);
+});
