@@ -35,6 +35,20 @@ export async function hashClientKey(ip, salt) {
   return Array.from(new Uint8Array(d).slice(0, 8), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+/**
+ * 古い版は、入室失敗の記録のキーに、接続元(IP アドレス)を生のまま使っていた("jf:<IP>")。その古い記録を、一度だけ全部消す
+ * (更新した最初の起動で。印は "jf_hashed")。いまの版のキー("jf:<ハッシュ>")は、この印のあとに作られる。
+ * kv: get / put / delete / list({prefix}) を持つもの(Durable Object の ctx.storage.kv)。消した件数を返す。
+ */
+export function purgeLegacyJoinKeys(kv) {
+  if (kv.get("jf_hashed")) return 0;
+  const keys = [];
+  for (const e of kv.list({ prefix: "jf:" })) keys.push(Array.isArray(e) ? e[0] : e);     // list の要素は [key, value] か key
+  for (const k of keys) kv.delete(k);
+  kv.put("jf_hashed", "1");
+  return keys.length;
+}
+
 export class NetGameCore {
   /**
    * host: { sockets(): WebSocket[], now(): number, random(): number, kv: { get(k), put(k, v), delete(k) } }

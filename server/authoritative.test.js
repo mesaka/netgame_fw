@@ -2,7 +2,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { setup } from "./testkit.js";
-import { NetGameCore, hashClientKey } from "./core.js";
+import { NetGameCore, hashClientKey, purgeLegacyJoinKeys } from "./core.js";
 
 import cards from "../examples/cards/adapter.js";
 const framed = {                      // ready あり・結果のあとはフレームワークの rematch
@@ -358,4 +358,24 @@ test("hashClientKey: 生の接続元を含まない16桁の16進。同じ入力�
   assert.notEqual(a, await hashClientKey("203.0.113.7", "salt-2"));
   assert.equal(await hashClientKey(null, "salt-1"), undefined);
   assert.equal(await hashClientKey("", "salt-1"), undefined);
+});
+
+test("古い版が生の IP をキーに残した入室失敗の記録は、更新した最初の起動で、一度だけ全部消える(部屋・状態は残る)", () => {
+  const mkKv = (entries, shape) => {
+    const m = new Map(entries);
+    return {
+      m,
+      get: (k) => m.get(k), put: (k, v) => m.set(k, v), delete: (k) => m.delete(k),
+      list: ({ prefix }) => [...m.entries()].filter(([k]) => k.startsWith(prefix)).map(([k, v]) => (shape === "keys" ? k : [k, v])),
+    };
+  };
+  for (const shape of ["pairs", "keys"]) {                         // list の要素が [key, value] でも、キーだけでも
+    const kv = mkKv([["jf:203.0.113.7", "{}"], ["jf:2001:db8::1", "{}"], ["room:AB3X", "{}"], ["state:AB3X", "{}"], ["gq", "[]"]], shape);
+    assert.equal(purgeLegacyJoinKeys(kv), 2);
+    assert.deepEqual([...kv.m.keys()].sort(), ["gq", "jf_hashed", "room:AB3X", "state:AB3X"]);
+    kv.put("jf:0123456789abcdef", "{}");                           // 更新後に作られた(ハッシュの)記録は、もう消さない
+    assert.equal(purgeLegacyJoinKeys(kv), 0);
+    assert.ok(kv.m.has("jf:0123456789abcdef"));
+  }
+  assert.equal(purgeLegacyJoinKeys(mkKv([], "pairs")), 0);         // 何もない新しいストレージでも、印が付くだけ
 });

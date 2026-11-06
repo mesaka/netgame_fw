@@ -120,7 +120,7 @@ v=2 の `hello` の `config` に、次が加わる(v=1 には足さない)。
 
 ### 9.2 `register`(friend)の変更
 - `password: "none"`: `pass` は不要(あっても無視)。`"optional"`: 送れば、その部屋に合言葉がつく(4桁の数字)。合言葉のある部屋には、一致する `pass` が要る。ない部屋は、なしで入れる。
-- 部屋に入る失敗(部屋がない・満員・合言葉違い)が、**5回続くと60秒、入れない**(`error: rate`, `d: {retry_ms}`)。数えるのは、接続元(Cloudflare の接続元 IP。接続し直しても続く)。**IP は、サーバー側だけが持つ salt でハッシュにして使い、生のまま保存しない。記録は、最後の失敗から1時間(`limits.joinWindowMs`)で消え、数え直しになる。** 接続元が分からないときは、接続ごと。成功すると数え直す。
+- 部屋に入る失敗(部屋がない・満員・合言葉違い)が、**5回続くと60秒、入れない**(`error: rate`, `d: {retry_ms}`)。数えるのは、接続元(Cloudflare の接続元 IP。接続し直しても続く)。**IP は、サーバー側だけが持つ salt でハッシュにして使い、生のまま保存しない。記録は、最後の失敗から1時間(`limits.joinWindowMs`)で消え、数え直しになる。** 生の IP を保存していた古い版から更新したときは、Worker(`createGameWorker`)が、古い記録を、更新した最初の起動で一度だけ全部消す(`purgeLegacyJoinKeys`)。 接続元が分からないときは、接続ごと。成功すると数え直す。
   - **適用するゲーム**: `password` が `"none"` / `"optional"` のゲーム(既定。アダプターの `rooms.joinLimit` で変えられる)。`"required"`(v1 の既定)は、これまで通り、部屋ごとの間違い回数(`passFails`)だけ。
   - 回数と時間は、アダプターの `limits.joinFails` / `limits.joinBlockMs`。
 
