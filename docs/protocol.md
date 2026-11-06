@@ -190,4 +190,4 @@ S→C  {t:"resumed", id, you, room, status, mode, settings, seed, players:[{seat
 - 結果が出た手と、開始・終了・切断・resume のときは、部屋の記録も書く。
 
 ### 9.6 クライアントの実装と適合テスト
-クライアントは、JS(`client-js/netgame/client.js`)と Python(`client/netgame/session.py`、`version=2`)の2つ。どちらも、`snapshot()`(同じ形の状態の一覧)を持ち、`tests/conformance/` のシナリオ(接続 → マッチ → 手 → ルール違反 → スタンプ → チャット → 切断 → resume → 結果 → 自動再接続 → 登録の失敗 → 部屋コード対戦 → 猶予切れ → 戻れない)に対して、同じ `golden.json` と一致する。**この 9 章を変えたら、シナリオと golden も見直す。** 使いかたは `client-js.md`。
+クライアントは、JS(`client-js/netgame/client.js`)と Python(`client/netgame/session.py`、`version=2`)の2つ。どちらも、`snapshot()`(同じ形の状態の一覧)を持ち、`tests/conformance/` のシナリオ(接続 → マッチ → 手 → ルール違反 → スタンプ → チャット → 切断 → resume → 結果 → 自動再接続 → 登録の失敗 → 保存した token で戻る・leave → 部屋コード対戦 → 猶予切れ → 戻れない)に対して、同じ `golden.json` と一致する。**この 9 章を変えたら、シナリオと golden も見直す。** 使いかたは `client-js.md`。

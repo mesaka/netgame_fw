@@ -8,6 +8,7 @@
     "players": [],
     "room": null,
     "hasToken": false,
+    "hasSaved": false,
     "seq": null,
     "view": null,
     "events": [],
@@ -30,6 +31,7 @@
     "players": [],
     "room": null,
     "hasToken": false,
+    "hasSaved": false,
     "seq": null,
     "view": null,
     "events": [],
@@ -47,6 +49,7 @@
     "players": [],
     "room": null,
     "hasToken": false,
+    "hasSaved": false,
     "seq": null,
     "view": null,
     "events": [],
@@ -69,6 +72,7 @@
     "players": [],
     "room": null,
     "hasToken": true,
+    "hasSaved": false,
     "seq": null,
     "view": null,
     "events": [],
@@ -86,6 +90,7 @@
     "players": [],
     "room": null,
     "hasToken": false,
+    "hasSaved": false,
     "seq": null,
     "view": null,
     "events": [],
@@ -117,6 +122,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 0,
     "view": {
      "hand": [
@@ -159,6 +165,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 0,
     "view": {
      "hand": [
@@ -206,6 +213,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 1,
     "view": {
      "hand": [
@@ -251,6 +259,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 1,
     "view": {
      "hand": [
@@ -302,6 +311,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 1,
     "view": {
      "hand": [
@@ -345,6 +355,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 1,
     "view": {
      "hand": [
@@ -396,6 +407,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 1,
     "view": {
      "hand": [
@@ -439,6 +451,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 1,
     "view": {
      "hand": [
@@ -498,6 +511,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 1,
     "view": {
      "hand": [
@@ -547,6 +561,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 1,
     "view": {
      "hand": [
@@ -612,6 +627,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 1,
     "view": {
      "hand": [
@@ -679,6 +695,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 2,
     "view": {
      "hand": [
@@ -747,6 +764,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 2,
     "view": {
      "hand": [
@@ -801,6 +819,7 @@
     "players": [],
     "room": null,
     "hasToken": false,
+    "hasSaved": false,
     "seq": null,
     "view": null,
     "events": [],
@@ -832,6 +851,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 2,
     "view": {
      "hand": [
@@ -892,7 +912,8 @@
      }
     ],
     "room": "<room>",
-    "hasToken": false,
+    "hasToken": true,
+    "hasSaved": true,
     "seq": 2,
     "view": {
      "hand": [
@@ -939,6 +960,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 4,
     "view": {
      "hand": [
@@ -1001,7 +1023,8 @@
      }
     ],
     "room": "<room>",
-    "hasToken": false,
+    "hasToken": true,
+    "hasSaved": true,
     "seq": 4,
     "view": {
      "hand": [],
@@ -1053,6 +1076,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 6,
     "view": {
      "hand": [],
@@ -1126,7 +1150,8 @@
      }
     ],
     "room": "<room>",
-    "hasToken": false,
+    "hasToken": true,
+    "hasSaved": true,
     "seq": 6,
     "view": {
      "hand": [],
@@ -1192,6 +1217,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 7,
     "view": {
      "hand": [
@@ -1259,7 +1285,8 @@
      }
     ],
     "room": "<room>",
-    "hasToken": false,
+    "hasToken": true,
+    "hasSaved": true,
     "seq": 7,
     "view": {
      "hand": [
@@ -1319,6 +1346,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 7,
     "view": {
      "hand": [
@@ -1386,7 +1414,8 @@
      }
     ],
     "room": "<room>",
-    "hasToken": false,
+    "hasToken": true,
+    "hasSaved": true,
     "seq": 7,
     "view": {
      "hand": [
@@ -1448,6 +1477,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 7,
     "view": {
      "hand": [
@@ -1491,7 +1521,8 @@
      }
     ],
     "room": "<room>",
-    "hasToken": false,
+    "hasToken": true,
+    "hasSaved": true,
     "seq": 7,
     "view": {
      "hand": [
@@ -1551,6 +1582,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 8,
     "view": {
      "hand": [
@@ -1601,7 +1633,8 @@
      }
     ],
     "room": "<room>",
-    "hasToken": false,
+    "hasToken": true,
+    "hasSaved": true,
     "seq": 8,
     "view": {
      "hand": [
@@ -1665,6 +1698,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 8,
     "view": {
      "hand": [
@@ -1715,7 +1749,8 @@
      }
     ],
     "room": "<room>",
-    "hasToken": false,
+    "hasToken": true,
+    "hasSaved": true,
     "seq": 8,
     "view": {
      "hand": [
@@ -1765,6 +1800,7 @@
     "players": [],
     "room": null,
     "hasToken": false,
+    "hasSaved": false,
     "seq": null,
     "view": null,
     "events": [],
@@ -1796,6 +1832,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 8,
     "view": {
      "hand": [
@@ -1846,7 +1883,8 @@
      }
     ],
     "room": "<room>",
-    "hasToken": false,
+    "hasToken": true,
+    "hasSaved": true,
     "seq": 8,
     "view": {
      "hand": [
@@ -1896,6 +1934,7 @@
     "players": [],
     "room": null,
     "hasToken": false,
+    "hasSaved": false,
     "seq": null,
     "view": null,
     "events": [],
@@ -1929,6 +1968,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 8,
     "view": {
      "hand": [
@@ -1979,7 +2019,8 @@
      }
     ],
     "room": "<room>",
-    "hasToken": false,
+    "hasToken": true,
+    "hasSaved": true,
     "seq": 8,
     "view": {
      "hand": [
@@ -2029,6 +2070,7 @@
     "players": [],
     "room": null,
     "hasToken": false,
+    "hasSaved": false,
     "seq": null,
     "view": null,
     "events": [],
@@ -2062,6 +2104,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 8,
     "view": {
      "hand": [
@@ -2112,7 +2155,8 @@
      }
     ],
     "room": "<room>",
-    "hasToken": false,
+    "hasToken": true,
+    "hasSaved": true,
     "seq": 8,
     "view": {
      "hand": [
@@ -2162,6 +2206,7 @@
     "players": [],
     "room": null,
     "hasToken": false,
+    "hasSaved": false,
     "seq": null,
     "view": null,
     "events": [],
@@ -2196,6 +2241,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 8,
     "view": {
      "hand": [
@@ -2246,7 +2292,8 @@
      }
     ],
     "room": "<room>",
-    "hasToken": false,
+    "hasToken": true,
+    "hasSaved": true,
     "seq": 8,
     "view": {
      "hand": [
@@ -2296,6 +2343,7 @@
     "players": [],
     "room": null,
     "hasToken": false,
+    "hasSaved": false,
     "seq": null,
     "view": null,
     "events": [],
@@ -2310,12 +2358,13 @@
     ],
     "ruleErrors": []
    },
-   "c": {
+   "f": {
     "phase": "idle",
     "seat": null,
     "players": [],
     "room": null,
     "hasToken": false,
+    "hasSaved": false,
     "seq": null,
     "view": null,
     "events": [],
@@ -2347,6 +2396,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 8,
     "view": {
      "hand": [
@@ -2397,7 +2447,8 @@
      }
     ],
     "room": "<room>",
-    "hasToken": false,
+    "hasToken": true,
+    "hasSaved": true,
     "seq": 8,
     "view": {
      "hand": [
@@ -2447,6 +2498,7 @@
     "players": [],
     "room": null,
     "hasToken": false,
+    "hasSaved": false,
     "seq": null,
     "view": null,
     "events": [],
@@ -2461,29 +2513,13 @@
     ],
     "ruleErrors": []
    },
-   "c": {
-    "phase": "idle",
+   "f": {
+    "phase": "waiting",
     "seat": null,
     "players": [],
-    "room": null,
-    "hasToken": false,
-    "seq": null,
-    "view": null,
-    "events": [],
-    "resync": false,
-    "relayed": [],
-    "result": null,
-    "offline": [],
-    "chat": [],
-    "errors": [],
-    "ruleErrors": []
-   },
-   "d": {
-    "phase": "idle",
-    "seat": null,
-    "players": [],
-    "room": null,
-    "hasToken": false,
+    "room": "<room>",
+    "hasToken": true,
+    "hasSaved": true,
     "seq": null,
     "view": null,
     "events": [],
@@ -2515,6 +2551,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 8,
     "view": {
      "hand": [
@@ -2565,7 +2602,8 @@
      }
     ],
     "room": "<room>",
-    "hasToken": false,
+    "hasToken": true,
+    "hasSaved": true,
     "seq": 8,
     "view": {
      "hand": [
@@ -2615,6 +2653,7 @@
     "players": [],
     "room": null,
     "hasToken": false,
+    "hasSaved": false,
     "seq": null,
     "view": null,
     "events": [],
@@ -2627,40 +2666,6 @@
      "room",
      "room"
     ],
-    "ruleErrors": []
-   },
-   "c": {
-    "phase": "waiting",
-    "seat": null,
-    "players": [],
-    "room": "<room>",
-    "hasToken": true,
-    "seq": null,
-    "view": null,
-    "events": [],
-    "resync": false,
-    "relayed": [],
-    "result": null,
-    "offline": [],
-    "chat": [],
-    "errors": [],
-    "ruleErrors": []
-   },
-   "d": {
-    "phase": "idle",
-    "seat": null,
-    "players": [],
-    "room": null,
-    "hasToken": false,
-    "seq": null,
-    "view": null,
-    "events": [],
-    "resync": false,
-    "relayed": [],
-    "result": null,
-    "offline": [],
-    "chat": [],
-    "errors": [],
     "ruleErrors": []
    }
   }
@@ -2683,6 +2688,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 8,
     "view": {
      "hand": [
@@ -2733,7 +2739,8 @@
      }
     ],
     "room": "<room>",
-    "hasToken": false,
+    "hasToken": true,
+    "hasSaved": true,
     "seq": 8,
     "view": {
      "hand": [
@@ -2783,6 +2790,7 @@
     "players": [],
     "room": null,
     "hasToken": false,
+    "hasSaved": false,
     "seq": null,
     "view": null,
     "events": [],
@@ -2797,82 +2805,16 @@
     ],
     "ruleErrors": []
    },
-   "c": {
-    "phase": "playing",
-    "seat": 0,
-    "players": [
-     {
-      "seat": 0,
-      "name": "う"
-     },
-     {
-      "seat": 1,
-      "name": "え"
-     }
-    ],
-    "room": "<room>",
-    "hasToken": true,
-    "seq": 0,
-    "view": {
-     "hand": [
-      2,
-      3,
-      8
-     ],
-     "oppCount": 3,
-     "played": [
-      [],
-      []
-     ],
-     "draws": []
-    },
-    "events": [
-     {
-      "t": "deal"
-     }
-    ],
-    "resync": false,
-    "relayed": [],
-    "result": null,
-    "offline": [],
-    "chat": [],
-    "errors": [],
-    "ruleErrors": []
-   },
-   "d": {
-    "phase": "playing",
-    "seat": 1,
-    "players": [
-     {
-      "seat": 0,
-      "name": "う"
-     },
-     {
-      "seat": 1,
-      "name": "え"
-     }
-    ],
-    "room": "<room>",
-    "hasToken": true,
-    "seq": 0,
-    "view": {
-     "hand": [
-      9,
-      6,
-      3
-     ],
-     "oppCount": 3,
-     "played": [
-      [],
-      []
-     ],
-     "draws": []
-    },
-    "events": [
-     {
-      "t": "deal"
-     }
-    ],
+   "f2": {
+    "phase": "idle",
+    "seat": null,
+    "players": [],
+    "room": null,
+    "hasToken": false,
+    "hasSaved": true,
+    "seq": null,
+    "view": null,
+    "events": [],
     "resync": false,
     "relayed": [],
     "result": null,
@@ -2901,6 +2843,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 8,
     "view": {
      "hand": [
@@ -2951,7 +2894,8 @@
      }
     ],
     "room": "<room>",
-    "hasToken": false,
+    "hasToken": true,
+    "hasSaved": true,
     "seq": 8,
     "view": {
      "hand": [
@@ -3001,6 +2945,7 @@
     "players": [],
     "room": null,
     "hasToken": false,
+    "hasSaved": false,
     "seq": null,
     "view": null,
     "events": [],
@@ -3015,88 +2960,25 @@
     ],
     "ruleErrors": []
    },
-   "c": {
-    "phase": "playing",
+   "f2": {
+    "phase": "waiting",
     "seat": 0,
     "players": [
      {
       "seat": 0,
-      "name": "う"
-     },
-     {
-      "seat": 1,
-      "name": "え"
+      "name": "か"
      }
     ],
     "room": "<room>",
     "hasToken": true,
-    "seq": 0,
-    "view": {
-     "hand": [
-      2,
-      3,
-      8
-     ],
-     "oppCount": 3,
-     "played": [
-      [],
-      []
-     ],
-     "draws": []
-    },
-    "events": [
-     {
-      "t": "deal"
-     }
-    ],
+    "hasSaved": true,
+    "seq": null,
+    "view": null,
+    "events": [],
     "resync": false,
     "relayed": [],
     "result": null,
     "offline": [],
-    "chat": [],
-    "errors": [],
-    "ruleErrors": []
-   },
-   "d": {
-    "phase": "playing",
-    "seat": 1,
-    "players": [
-     {
-      "seat": 0,
-      "name": "う"
-     },
-     {
-      "seat": 1,
-      "name": "え"
-     }
-    ],
-    "room": "<room>",
-    "hasToken": true,
-    "seq": 0,
-    "view": {
-     "hand": [
-      9,
-      6,
-      3
-     ],
-     "oppCount": 3,
-     "played": [
-      [],
-      []
-     ],
-     "draws": []
-    },
-    "events": [
-     {
-      "t": "deal"
-     }
-    ],
-    "resync": false,
-    "relayed": [],
-    "result": null,
-    "offline": [
-     0
-    ],
     "chat": [],
     "errors": [],
     "ruleErrors": []
@@ -3121,6 +3003,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 8,
     "view": {
      "hand": [
@@ -3171,7 +3054,8 @@
      }
     ],
     "room": "<room>",
-    "hasToken": false,
+    "hasToken": true,
+    "hasSaved": true,
     "seq": 8,
     "view": {
      "hand": [
@@ -3221,6 +3105,7 @@
     "players": [],
     "room": null,
     "hasToken": false,
+    "hasSaved": false,
     "seq": null,
     "view": null,
     "events": [],
@@ -3233,6 +3118,734 @@
      "room",
      "room"
     ],
+    "ruleErrors": []
+   },
+   "f2": {
+    "phase": "idle",
+    "seat": null,
+    "players": [],
+    "room": null,
+    "hasToken": false,
+    "hasSaved": false,
+    "seq": null,
+    "view": null,
+    "events": [],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [],
+    "errors": [],
+    "ruleErrors": []
+   }
+  }
+ },
+ {
+  "step": 28,
+  "snaps": {
+   "b": {
+    "phase": "playing",
+    "seat": 1,
+    "players": [
+     {
+      "seat": 0,
+      "name": "あ"
+     },
+     {
+      "seat": 1,
+      "name": "い"
+     }
+    ],
+    "room": "<room>",
+    "hasToken": true,
+    "hasSaved": true,
+    "seq": 8,
+    "view": {
+     "hand": [
+      5,
+      0
+     ],
+     "oppCount": 3,
+     "played": [
+      [],
+      [
+       9
+      ]
+     ],
+     "draws": []
+    },
+    "events": [
+     {
+      "t": "played",
+      "seat": 1,
+      "n": 9
+     }
+    ],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [
+     {
+      "mine": true,
+      "name": "い",
+      "text": "こんにちは"
+     }
+    ],
+    "errors": [],
+    "ruleErrors": []
+   },
+   "a2": {
+    "phase": "playing",
+    "seat": 0,
+    "players": [
+     {
+      "seat": 0,
+      "name": "あ"
+     },
+     {
+      "seat": 1,
+      "name": "い"
+     }
+    ],
+    "room": "<room>",
+    "hasToken": true,
+    "hasSaved": true,
+    "seq": 8,
+    "view": {
+     "hand": [
+      4,
+      9,
+      8
+     ],
+     "oppCount": 2,
+     "played": [
+      [],
+      [
+       9
+      ]
+     ],
+     "draws": []
+    },
+    "events": [
+     {
+      "t": "played",
+      "seat": 1,
+      "n": 9
+     }
+    ],
+    "resync": false,
+    "relayed": [],
+    "result": {
+     "ranks": [
+      {
+       "seat": 0,
+       "rank": 1
+      },
+      {
+       "seat": 1,
+       "rank": 2
+      }
+     ],
+     "why": "normal"
+    },
+    "offline": [],
+    "chat": [],
+    "errors": [],
+    "ruleErrors": []
+   },
+   "e": {
+    "phase": "idle",
+    "seat": null,
+    "players": [],
+    "room": null,
+    "hasToken": false,
+    "hasSaved": false,
+    "seq": null,
+    "view": null,
+    "events": [],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [],
+    "errors": [
+     "room",
+     "room"
+    ],
+    "ruleErrors": []
+   },
+   "f2": {
+    "phase": "idle",
+    "seat": null,
+    "players": [],
+    "room": null,
+    "hasToken": false,
+    "hasSaved": false,
+    "seq": null,
+    "view": null,
+    "events": [],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [],
+    "errors": [],
+    "ruleErrors": []
+   },
+   "c": {
+    "phase": "idle",
+    "seat": null,
+    "players": [],
+    "room": null,
+    "hasToken": false,
+    "hasSaved": false,
+    "seq": null,
+    "view": null,
+    "events": [],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [],
+    "errors": [],
+    "ruleErrors": []
+   }
+  }
+ },
+ {
+  "step": 29,
+  "snaps": {
+   "b": {
+    "phase": "playing",
+    "seat": 1,
+    "players": [
+     {
+      "seat": 0,
+      "name": "あ"
+     },
+     {
+      "seat": 1,
+      "name": "い"
+     }
+    ],
+    "room": "<room>",
+    "hasToken": true,
+    "hasSaved": true,
+    "seq": 8,
+    "view": {
+     "hand": [
+      5,
+      0
+     ],
+     "oppCount": 3,
+     "played": [
+      [],
+      [
+       9
+      ]
+     ],
+     "draws": []
+    },
+    "events": [
+     {
+      "t": "played",
+      "seat": 1,
+      "n": 9
+     }
+    ],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [
+     {
+      "mine": true,
+      "name": "い",
+      "text": "こんにちは"
+     }
+    ],
+    "errors": [],
+    "ruleErrors": []
+   },
+   "a2": {
+    "phase": "playing",
+    "seat": 0,
+    "players": [
+     {
+      "seat": 0,
+      "name": "あ"
+     },
+     {
+      "seat": 1,
+      "name": "い"
+     }
+    ],
+    "room": "<room>",
+    "hasToken": true,
+    "hasSaved": true,
+    "seq": 8,
+    "view": {
+     "hand": [
+      4,
+      9,
+      8
+     ],
+     "oppCount": 2,
+     "played": [
+      [],
+      [
+       9
+      ]
+     ],
+     "draws": []
+    },
+    "events": [
+     {
+      "t": "played",
+      "seat": 1,
+      "n": 9
+     }
+    ],
+    "resync": false,
+    "relayed": [],
+    "result": {
+     "ranks": [
+      {
+       "seat": 0,
+       "rank": 1
+      },
+      {
+       "seat": 1,
+       "rank": 2
+      }
+     ],
+     "why": "normal"
+    },
+    "offline": [],
+    "chat": [],
+    "errors": [],
+    "ruleErrors": []
+   },
+   "e": {
+    "phase": "idle",
+    "seat": null,
+    "players": [],
+    "room": null,
+    "hasToken": false,
+    "hasSaved": false,
+    "seq": null,
+    "view": null,
+    "events": [],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [],
+    "errors": [
+     "room",
+     "room"
+    ],
+    "ruleErrors": []
+   },
+   "f2": {
+    "phase": "idle",
+    "seat": null,
+    "players": [],
+    "room": null,
+    "hasToken": false,
+    "hasSaved": false,
+    "seq": null,
+    "view": null,
+    "events": [],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [],
+    "errors": [],
+    "ruleErrors": []
+   },
+   "c": {
+    "phase": "idle",
+    "seat": null,
+    "players": [],
+    "room": null,
+    "hasToken": false,
+    "hasSaved": false,
+    "seq": null,
+    "view": null,
+    "events": [],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [],
+    "errors": [],
+    "ruleErrors": []
+   },
+   "d": {
+    "phase": "idle",
+    "seat": null,
+    "players": [],
+    "room": null,
+    "hasToken": false,
+    "hasSaved": false,
+    "seq": null,
+    "view": null,
+    "events": [],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [],
+    "errors": [],
+    "ruleErrors": []
+   }
+  }
+ },
+ {
+  "step": 30,
+  "snaps": {
+   "b": {
+    "phase": "playing",
+    "seat": 1,
+    "players": [
+     {
+      "seat": 0,
+      "name": "あ"
+     },
+     {
+      "seat": 1,
+      "name": "い"
+     }
+    ],
+    "room": "<room>",
+    "hasToken": true,
+    "hasSaved": true,
+    "seq": 8,
+    "view": {
+     "hand": [
+      5,
+      0
+     ],
+     "oppCount": 3,
+     "played": [
+      [],
+      [
+       9
+      ]
+     ],
+     "draws": []
+    },
+    "events": [
+     {
+      "t": "played",
+      "seat": 1,
+      "n": 9
+     }
+    ],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [
+     {
+      "mine": true,
+      "name": "い",
+      "text": "こんにちは"
+     }
+    ],
+    "errors": [],
+    "ruleErrors": []
+   },
+   "a2": {
+    "phase": "playing",
+    "seat": 0,
+    "players": [
+     {
+      "seat": 0,
+      "name": "あ"
+     },
+     {
+      "seat": 1,
+      "name": "い"
+     }
+    ],
+    "room": "<room>",
+    "hasToken": true,
+    "hasSaved": true,
+    "seq": 8,
+    "view": {
+     "hand": [
+      4,
+      9,
+      8
+     ],
+     "oppCount": 2,
+     "played": [
+      [],
+      [
+       9
+      ]
+     ],
+     "draws": []
+    },
+    "events": [
+     {
+      "t": "played",
+      "seat": 1,
+      "n": 9
+     }
+    ],
+    "resync": false,
+    "relayed": [],
+    "result": {
+     "ranks": [
+      {
+       "seat": 0,
+       "rank": 1
+      },
+      {
+       "seat": 1,
+       "rank": 2
+      }
+     ],
+     "why": "normal"
+    },
+    "offline": [],
+    "chat": [],
+    "errors": [],
+    "ruleErrors": []
+   },
+   "e": {
+    "phase": "idle",
+    "seat": null,
+    "players": [],
+    "room": null,
+    "hasToken": false,
+    "hasSaved": false,
+    "seq": null,
+    "view": null,
+    "events": [],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [],
+    "errors": [
+     "room",
+     "room"
+    ],
+    "ruleErrors": []
+   },
+   "f2": {
+    "phase": "idle",
+    "seat": null,
+    "players": [],
+    "room": null,
+    "hasToken": false,
+    "hasSaved": false,
+    "seq": null,
+    "view": null,
+    "events": [],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [],
+    "errors": [],
+    "ruleErrors": []
+   },
+   "c": {
+    "phase": "waiting",
+    "seat": null,
+    "players": [],
+    "room": "<room>",
+    "hasToken": true,
+    "hasSaved": true,
+    "seq": null,
+    "view": null,
+    "events": [],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [],
+    "errors": [],
+    "ruleErrors": []
+   },
+   "d": {
+    "phase": "idle",
+    "seat": null,
+    "players": [],
+    "room": null,
+    "hasToken": false,
+    "hasSaved": false,
+    "seq": null,
+    "view": null,
+    "events": [],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [],
+    "errors": [],
+    "ruleErrors": []
+   }
+  }
+ },
+ {
+  "step": 31,
+  "snaps": {
+   "b": {
+    "phase": "playing",
+    "seat": 1,
+    "players": [
+     {
+      "seat": 0,
+      "name": "あ"
+     },
+     {
+      "seat": 1,
+      "name": "い"
+     }
+    ],
+    "room": "<room>",
+    "hasToken": true,
+    "hasSaved": true,
+    "seq": 8,
+    "view": {
+     "hand": [
+      5,
+      0
+     ],
+     "oppCount": 3,
+     "played": [
+      [],
+      [
+       9
+      ]
+     ],
+     "draws": []
+    },
+    "events": [
+     {
+      "t": "played",
+      "seat": 1,
+      "n": 9
+     }
+    ],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [
+     {
+      "mine": true,
+      "name": "い",
+      "text": "こんにちは"
+     }
+    ],
+    "errors": [],
+    "ruleErrors": []
+   },
+   "a2": {
+    "phase": "playing",
+    "seat": 0,
+    "players": [
+     {
+      "seat": 0,
+      "name": "あ"
+     },
+     {
+      "seat": 1,
+      "name": "い"
+     }
+    ],
+    "room": "<room>",
+    "hasToken": true,
+    "hasSaved": true,
+    "seq": 8,
+    "view": {
+     "hand": [
+      4,
+      9,
+      8
+     ],
+     "oppCount": 2,
+     "played": [
+      [],
+      [
+       9
+      ]
+     ],
+     "draws": []
+    },
+    "events": [
+     {
+      "t": "played",
+      "seat": 1,
+      "n": 9
+     }
+    ],
+    "resync": false,
+    "relayed": [],
+    "result": {
+     "ranks": [
+      {
+       "seat": 0,
+       "rank": 1
+      },
+      {
+       "seat": 1,
+       "rank": 2
+      }
+     ],
+     "why": "normal"
+    },
+    "offline": [],
+    "chat": [],
+    "errors": [],
+    "ruleErrors": []
+   },
+   "e": {
+    "phase": "idle",
+    "seat": null,
+    "players": [],
+    "room": null,
+    "hasToken": false,
+    "hasSaved": false,
+    "seq": null,
+    "view": null,
+    "events": [],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [],
+    "errors": [
+     "room",
+     "room"
+    ],
+    "ruleErrors": []
+   },
+   "f2": {
+    "phase": "idle",
+    "seat": null,
+    "players": [],
+    "room": null,
+    "hasToken": false,
+    "hasSaved": false,
+    "seq": null,
+    "view": null,
+    "events": [],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [],
+    "errors": [],
     "ruleErrors": []
    },
    "c": {
@@ -3250,12 +3863,13 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 0,
     "view": {
      "hand": [
-      2,
-      3,
-      8
+      1,
+      8,
+      0
      ],
      "oppCount": 3,
      "played": [
@@ -3292,12 +3906,13 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 0,
     "view": {
      "hand": [
-      9,
-      6,
-      3
+      7,
+      4,
+      9
      ],
      "oppCount": 3,
      "played": [
@@ -3314,9 +3929,7 @@
     "resync": false,
     "relayed": [],
     "result": null,
-    "offline": [
-     0
-    ],
+    "offline": [],
     "chat": [],
     "errors": [],
     "ruleErrors": []
@@ -3324,7 +3937,7 @@
   }
  },
  {
-  "step": 28,
+  "step": 32,
   "snaps": {
    "b": {
     "phase": "playing",
@@ -3341,6 +3954,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 8,
     "view": {
      "hand": [
@@ -3391,7 +4005,8 @@
      }
     ],
     "room": "<room>",
-    "hasToken": false,
+    "hasToken": true,
+    "hasSaved": true,
     "seq": 8,
     "view": {
      "hand": [
@@ -3441,6 +4056,7 @@
     "players": [],
     "room": null,
     "hasToken": false,
+    "hasSaved": false,
     "seq": null,
     "view": null,
     "events": [],
@@ -3453,6 +4069,24 @@
      "room",
      "room"
     ],
+    "ruleErrors": []
+   },
+   "f2": {
+    "phase": "idle",
+    "seat": null,
+    "players": [],
+    "room": null,
+    "hasToken": false,
+    "hasSaved": false,
+    "seq": null,
+    "view": null,
+    "events": [],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [],
+    "errors": [],
     "ruleErrors": []
    },
    "c": {
@@ -3470,12 +4104,499 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 0,
     "view": {
      "hand": [
-      2,
-      3,
+      1,
+      8,
+      0
+     ],
+     "oppCount": 3,
+     "played": [
+      [],
+      []
+     ],
+     "draws": []
+    },
+    "events": [
+     {
+      "t": "deal"
+     }
+    ],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [],
+    "errors": [],
+    "ruleErrors": []
+   },
+   "d": {
+    "phase": "playing",
+    "seat": 1,
+    "players": [
+     {
+      "seat": 0,
+      "name": "う"
+     },
+     {
+      "seat": 1,
+      "name": "え"
+     }
+    ],
+    "room": "<room>",
+    "hasToken": true,
+    "hasSaved": true,
+    "seq": 0,
+    "view": {
+     "hand": [
+      7,
+      4,
+      9
+     ],
+     "oppCount": 3,
+     "played": [
+      [],
+      []
+     ],
+     "draws": []
+    },
+    "events": [
+     {
+      "t": "deal"
+     }
+    ],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [
+     0
+    ],
+    "chat": [],
+    "errors": [],
+    "ruleErrors": []
+   }
+  }
+ },
+ {
+  "step": 33,
+  "snaps": {
+   "b": {
+    "phase": "playing",
+    "seat": 1,
+    "players": [
+     {
+      "seat": 0,
+      "name": "あ"
+     },
+     {
+      "seat": 1,
+      "name": "い"
+     }
+    ],
+    "room": "<room>",
+    "hasToken": true,
+    "hasSaved": true,
+    "seq": 8,
+    "view": {
+     "hand": [
+      5,
+      0
+     ],
+     "oppCount": 3,
+     "played": [
+      [],
+      [
+       9
+      ]
+     ],
+     "draws": []
+    },
+    "events": [
+     {
+      "t": "played",
+      "seat": 1,
+      "n": 9
+     }
+    ],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [
+     {
+      "mine": true,
+      "name": "い",
+      "text": "こんにちは"
+     }
+    ],
+    "errors": [],
+    "ruleErrors": []
+   },
+   "a2": {
+    "phase": "playing",
+    "seat": 0,
+    "players": [
+     {
+      "seat": 0,
+      "name": "あ"
+     },
+     {
+      "seat": 1,
+      "name": "い"
+     }
+    ],
+    "room": "<room>",
+    "hasToken": true,
+    "hasSaved": true,
+    "seq": 8,
+    "view": {
+     "hand": [
+      4,
+      9,
       8
+     ],
+     "oppCount": 2,
+     "played": [
+      [],
+      [
+       9
+      ]
+     ],
+     "draws": []
+    },
+    "events": [
+     {
+      "t": "played",
+      "seat": 1,
+      "n": 9
+     }
+    ],
+    "resync": false,
+    "relayed": [],
+    "result": {
+     "ranks": [
+      {
+       "seat": 0,
+       "rank": 1
+      },
+      {
+       "seat": 1,
+       "rank": 2
+      }
+     ],
+     "why": "normal"
+    },
+    "offline": [],
+    "chat": [],
+    "errors": [],
+    "ruleErrors": []
+   },
+   "e": {
+    "phase": "idle",
+    "seat": null,
+    "players": [],
+    "room": null,
+    "hasToken": false,
+    "hasSaved": false,
+    "seq": null,
+    "view": null,
+    "events": [],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [],
+    "errors": [
+     "room",
+     "room"
+    ],
+    "ruleErrors": []
+   },
+   "f2": {
+    "phase": "idle",
+    "seat": null,
+    "players": [],
+    "room": null,
+    "hasToken": false,
+    "hasSaved": false,
+    "seq": null,
+    "view": null,
+    "events": [],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [],
+    "errors": [],
+    "ruleErrors": []
+   },
+   "c": {
+    "phase": "playing",
+    "seat": 0,
+    "players": [
+     {
+      "seat": 0,
+      "name": "う"
+     },
+     {
+      "seat": 1,
+      "name": "え"
+     }
+    ],
+    "room": "<room>",
+    "hasToken": true,
+    "hasSaved": true,
+    "seq": 0,
+    "view": {
+     "hand": [
+      1,
+      8,
+      0
+     ],
+     "oppCount": 3,
+     "played": [
+      [],
+      []
+     ],
+     "draws": []
+    },
+    "events": [
+     {
+      "t": "deal"
+     }
+    ],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [],
+    "errors": [],
+    "ruleErrors": []
+   },
+   "d": {
+    "phase": "playing",
+    "seat": 1,
+    "players": [
+     {
+      "seat": 0,
+      "name": "う"
+     },
+     {
+      "seat": 1,
+      "name": "え"
+     }
+    ],
+    "room": "<room>",
+    "hasToken": true,
+    "hasSaved": true,
+    "seq": 0,
+    "view": {
+     "hand": [
+      7,
+      4,
+      9
+     ],
+     "oppCount": 3,
+     "played": [
+      [],
+      []
+     ],
+     "draws": []
+    },
+    "events": [
+     {
+      "t": "deal"
+     }
+    ],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [
+     0
+    ],
+    "chat": [],
+    "errors": [],
+    "ruleErrors": []
+   }
+  }
+ },
+ {
+  "step": 34,
+  "snaps": {
+   "b": {
+    "phase": "playing",
+    "seat": 1,
+    "players": [
+     {
+      "seat": 0,
+      "name": "あ"
+     },
+     {
+      "seat": 1,
+      "name": "い"
+     }
+    ],
+    "room": "<room>",
+    "hasToken": true,
+    "hasSaved": true,
+    "seq": 8,
+    "view": {
+     "hand": [
+      5,
+      0
+     ],
+     "oppCount": 3,
+     "played": [
+      [],
+      [
+       9
+      ]
+     ],
+     "draws": []
+    },
+    "events": [
+     {
+      "t": "played",
+      "seat": 1,
+      "n": 9
+     }
+    ],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [
+     {
+      "mine": true,
+      "name": "い",
+      "text": "こんにちは"
+     }
+    ],
+    "errors": [],
+    "ruleErrors": []
+   },
+   "a2": {
+    "phase": "playing",
+    "seat": 0,
+    "players": [
+     {
+      "seat": 0,
+      "name": "あ"
+     },
+     {
+      "seat": 1,
+      "name": "い"
+     }
+    ],
+    "room": "<room>",
+    "hasToken": true,
+    "hasSaved": true,
+    "seq": 8,
+    "view": {
+     "hand": [
+      4,
+      9,
+      8
+     ],
+     "oppCount": 2,
+     "played": [
+      [],
+      [
+       9
+      ]
+     ],
+     "draws": []
+    },
+    "events": [
+     {
+      "t": "played",
+      "seat": 1,
+      "n": 9
+     }
+    ],
+    "resync": false,
+    "relayed": [],
+    "result": {
+     "ranks": [
+      {
+       "seat": 0,
+       "rank": 1
+      },
+      {
+       "seat": 1,
+       "rank": 2
+      }
+     ],
+     "why": "normal"
+    },
+    "offline": [],
+    "chat": [],
+    "errors": [],
+    "ruleErrors": []
+   },
+   "e": {
+    "phase": "idle",
+    "seat": null,
+    "players": [],
+    "room": null,
+    "hasToken": false,
+    "hasSaved": false,
+    "seq": null,
+    "view": null,
+    "events": [],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [],
+    "errors": [
+     "room",
+     "room"
+    ],
+    "ruleErrors": []
+   },
+   "f2": {
+    "phase": "idle",
+    "seat": null,
+    "players": [],
+    "room": null,
+    "hasToken": false,
+    "hasSaved": false,
+    "seq": null,
+    "view": null,
+    "events": [],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [],
+    "errors": [],
+    "ruleErrors": []
+   },
+   "c": {
+    "phase": "playing",
+    "seat": 0,
+    "players": [
+     {
+      "seat": 0,
+      "name": "う"
+     },
+     {
+      "seat": 1,
+      "name": "え"
+     }
+    ],
+    "room": "<room>",
+    "hasToken": true,
+    "hasSaved": true,
+    "seq": 0,
+    "view": {
+     "hand": [
+      1,
+      8,
+      0
      ],
      "oppCount": 3,
      "played": [
@@ -3512,12 +4633,13 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 0,
     "view": {
      "hand": [
-      9,
-      6,
-      3
+      7,
+      4,
+      9
      ],
      "oppCount": 3,
      "played": [
@@ -3556,7 +4678,7 @@
   }
  },
  {
-  "step": 29,
+  "step": 35,
   "snaps": {
    "b": {
     "phase": "playing",
@@ -3573,6 +4695,7 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 8,
     "view": {
      "hand": [
@@ -3623,7 +4746,8 @@
      }
     ],
     "room": "<room>",
-    "hasToken": false,
+    "hasToken": true,
+    "hasSaved": true,
     "seq": 8,
     "view": {
      "hand": [
@@ -3673,6 +4797,7 @@
     "players": [],
     "room": null,
     "hasToken": false,
+    "hasSaved": false,
     "seq": null,
     "view": null,
     "events": [],
@@ -3687,12 +4812,31 @@
     ],
     "ruleErrors": []
    },
+   "f2": {
+    "phase": "idle",
+    "seat": null,
+    "players": [],
+    "room": null,
+    "hasToken": false,
+    "hasSaved": false,
+    "seq": null,
+    "view": null,
+    "events": [],
+    "resync": false,
+    "relayed": [],
+    "result": null,
+    "offline": [],
+    "chat": [],
+    "errors": [],
+    "ruleErrors": []
+   },
    "c": {
     "phase": "idle",
     "seat": null,
     "players": [],
     "room": null,
     "hasToken": false,
+    "hasSaved": false,
     "seq": null,
     "view": null,
     "events": [],
@@ -3721,12 +4865,13 @@
     ],
     "room": "<room>",
     "hasToken": true,
+    "hasSaved": true,
     "seq": 0,
     "view": {
      "hand": [
-      9,
-      6,
-      3
+      7,
+      4,
+      9
      ],
      "oppCount": 3,
      "played": [

@@ -86,6 +86,7 @@ def run_scenario(host):
     sessions, live, log = {}, set(), []
     clk = {"t": 0.0}                                    # 差し替えた時計(再接続の待ち時間を、テストが進める)
     made = {"n": 0}
+    stores = {}                                         # 保存先(token と部屋コード)。connect の storage で、同じものを共有する(ページを開き直した想定)
 
     def new_transport(who):
         made["n"] += 1
@@ -109,7 +110,8 @@ def run_scenario(host):
         expect = st.get("expect", True)
         if do == "connect":
             s = NetSession(new_transport(who), sc["game"], version=sc["v"], clock=lambda: clk["t"],
-                           transport_factory=lambda who=who: new_transport(who))
+                           transport_factory=lambda who=who: new_transport(who),
+                           storage=stores.setdefault(st.get("storage", who), {}))
             sessions[who] = s
             live.add(who)
             s.start()
@@ -139,6 +141,10 @@ def run_scenario(host):
                     break
                 clk["t"] += 20.0
                 settle()
+        elif do == "resumeSaved":
+            assert s.resume()
+        elif do == "leave":
+            s.leave()
         elif do == "resume":
             f = sessions[st["from"]]
             assert s.resume(f.room_code, f.token)

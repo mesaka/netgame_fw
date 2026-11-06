@@ -1,5 +1,5 @@
 {
-  "_comment": "適合テストのシナリオ。JS クライアント(client-js/conformance.test.js)と Python クライアント(tests/test_conformance.py)が、同じ手順を、同じサーバー核(examples/cards)に実行し、各ステップのあとの snapshot() が golden.json と一致することを確かめる。$hand0 = その人の view.hand[0]、$room:x = x の部屋コード。drop = クライアントから接続を閉じる(自動再接続しない)/ netDrop = 通信が途切れた(自動再接続する)/ awaitReconnect = 再接続の待ち時間が過ぎて、つなぎ直す(時計は両クライアントとも差し替えてある)/ expect:false = クライアントが送らずに断る。",
+  "_comment": "適合テストのシナリオ。JS クライアント(client-js/conformance.test.js)と Python クライアント(tests/test_conformance.py)が、同じ手順を、同じサーバー核(examples/cards)に実行し、各ステップのあとの snapshot() が golden.json と一致することを確かめる。$hand0 = その人の view.hand[0]、$room:x = x の部屋コード。drop = クライアントから接続を閉じる(自動再接続しない)/ netDrop = 通信が途切れた(自動再接続する)/ awaitReconnect = 再接続の待ち時間が過ぎて、つなぎ直す(時計は両クライアントとも差し替えてある)/ expect:false = クライアントが送らずに断る。 connect の storage = 保存先を共有するクライアント名(ページを開き直した想定)/ resumeSaved = 保存した token で戻る / leave = 部屋を出る。",
   "game": "cards",
   "v": 2,
   "steps": [
@@ -124,6 +124,32 @@
       "name": "お",
       "room": "abc",
       "pass": "12"
+    },
+    {
+      "who": "f",
+      "do": "connect"
+    },
+    {
+      "who": "f",
+      "do": "registerFriend",
+      "name": "か"
+    },
+    {
+      "who": "f",
+      "do": "drop"
+    },
+    {
+      "who": "f2",
+      "do": "connect",
+      "storage": "f"
+    },
+    {
+      "who": "f2",
+      "do": "resumeSaved"
+    },
+    {
+      "who": "f2",
+      "do": "leave"
     },
     {
       "who": "c",

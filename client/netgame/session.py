@@ -26,7 +26,7 @@ RECONNECT = {"min_ms": 1000, "max_ms": 10000, "factor": 1.3, "give_up_ms": 30000
 
 class NetSession:
     def __init__(self, transport: Transport, game: str, clock=time.monotonic, default_name="相手", version=PROTOCOL_VERSION,
-                 reconnect=None, transport_factory=None):
+                 reconnect=None, transport_factory=None, storage=None):
         if version not in range(PROTOCOL_VERSION, MAX_PROTOCOL_VERSION + 1):
             raise ValueError("version は 1 か 2")
         self.t = transport
@@ -35,6 +35,9 @@ class NetSession:
         # transport_factory: 新しい接続(Transport)を作る関数(省略時は transport.make_transport)
         self._reconnect = None if reconnect is False or version < 2 else {**RECONNECT, **(reconnect or {})}
         self._factory = transport_factory
+        # storage: token と部屋コードの保存先(dict のように get / [key] = value / pop が使えるもの。省略するとメモリだけ)。
+        # ブラウザなら webbridge.WebStorage()。ページを開き直しても、resume() で戻れる。JS 版 NetGameClient と同じ形式(キー netgame.<game>)
+        self._storage = storage
         self._reconnecting = False            # 切れて、つなぎ直している最中(新しい接続の hello が届くまで)
         self._next_try = None                 # 次につなぎ直す時刻(つなぎ直しの最中で、まだ接続を開いていないとき)
         self._tries = 0
@@ -259,6 +262,46 @@ class NetSession:
             return sent if self.version >= 2 else None
         return False if self.version >= 2 else None
 
+    # ---- v=2: 保存(token と部屋コード)・退出 ----
+    def _storage_key(self):
+        return "netgame." + self.game
+
+    def saved_session(self):
+        """保存した {"room", "token"}(なければ None)。ページを開き直したあとの resume() が使う。"""
+        try:
+            v = self._storage.get(self._storage_key()) if self._storage is not None else None
+            s = json.loads(v) if v else None
+            return s if isinstance(s, dict) and s.get("room") and s.get("token") else None
+        except Exception:                                  # noqa: BLE001  (保存先が使えなくても動く)
+            return None
+
+    def _persist(self):
+        if self._storage is None or not (self.room_code and self.token):
+            return
+        try:
+            self._storage[self._storage_key()] = json.dumps({"room": self.room_code, "token": self.token}, separators=(",", ":"))
+        except Exception:                                  # noqa: BLE001
+            pass
+
+    def forget(self):
+        """保存した token と部屋コードを消す。"""
+        try:
+            if self._storage is not None:
+                self._storage.pop(self._storage_key(), None)
+        except Exception:                                  # noqa: BLE001
+            pass
+
+    def leave(self):
+        """部屋を出る(すぐ退出。猶予なし。相手がいれば、相手の勝ち)。保存した token も消す。接続は開いたままで、state は "idle"
+        (登録しなおせる)。接続ごと閉じて、猶予のあいだ席を残すなら close()。"""
+        self._send({"t": "leave"})
+        self.forget()
+        self._reset_match()
+        self.token, self.room_code, self.room_id = "", "", ""
+        if self.state != "closed":
+            self.state = "idle"
+        return True
+
     def act(self, action=None):
         """v=2 authoritative: 手を送る。結果は、サーバーから届く state(take_views)で受け取る。自分の盤面は、それまで変えない。"""
         if self.version < 2 or self.state != "playing":
@@ -274,12 +317,18 @@ class NetSession:
     def resume(self, room=None, token=None):
         """v=2: 切れた席に、この接続で戻る(hello のあと = state が idle のとき)。room / token を省くと、いまの値を使う。
         戻れたら resumed のあと、いまの状態(state など)が届く。戻れなければ state は idle に戻り、notice が "resume" になる。"""
-        room, token = room or self.room_code, token or self.token
-        if self.version < 2 or self.state != "idle" or not room or not token:
+        if room and token:
+            s = {"room": room, "token": token}
+        elif self.room_code and self.token:
+            s = {"room": self.room_code, "token": self.token}
+        else:
+            s = self.saved_session()                     # 保存した値(ページを開き直したときなど)
+        if self.version < 2 or self.state != "idle" or not s:
             return False
-        if not self._send({"t": "resume", "room": str(room), "token": str(token)}):
+        if not self._send({"t": "resume", "room": str(s["room"]), "token": str(s["token"])}):
             return False
         self.state = "resuming"
+        self.room_code, self.token = str(s["room"]), str(s["token"])    # 戻れたら、そのあと切れても自動で再接続できるように覚える
         return True
 
     def send_action(self, data=None):
@@ -434,6 +483,7 @@ class NetSession:
             self.room_id = str(m["room"])
         if m.get("room"):
             self.room_code = str(m["room"])
+            self._persist()
 
     def _on_match(self, m):
         seed = int(m.get("seed", 0))
@@ -445,6 +495,7 @@ class NetSession:
         self.seat, self.players, self.seed = you, players, seed
         if m.get("room"):
             self.room_code = str(m["room"])
+            self._persist()
         self.view, self.view_seq, self.view_events, self.view_resync = None, None, [], False
         self.views, self.event_log, self.offline_seats = [], [], set()
         self.settings = m.get("settings") or self.settings
@@ -516,6 +567,7 @@ class NetSession:
         self.state = {"waiting": "waiting", "ready": "ready", "playing": "playing", "over": "over"}.get(m.get("status"), "playing")
         self._lost_at = 0.0
         self.notice = None
+        self._persist()
 
     def _on_action(self, m):
         if self.state == "playing":
@@ -569,6 +621,7 @@ class NetSession:
             self.rule_errors.append(m.get("d"))
         if code == "resume":                                     # 戻れない(部屋がない・合言葉が違う・猶予切れ)
             self.token, self.room_code, self._resume_to, self._lost_at = "", "", None, 0.0
+            self.forget()
             if self.state == "resuming":
                 self.state, self.notice = "idle", "resume"
                 self._reset_match()                                # 登録しなおせる
@@ -637,6 +690,7 @@ class NetSession:
             "players": [{"seat": p["seat"], "name": p["name"]} for p in self.players],
             "room": "<room>" if self.room_code else None,
             "hasToken": bool(self.token),
+            "hasSaved": self.saved_session() is not None,
             "seq": self.view_seq,
             "view": self.view,
             "events": self.view_events,

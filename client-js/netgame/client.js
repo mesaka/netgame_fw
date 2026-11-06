@@ -291,8 +291,11 @@ export class NetGameClient {
   resume({ room, token } = {}) {
     const s = room && token ? { room, token } : (this.room && this.token ? { room: this.room, token: this.token } : this.savedSession());
     if (!s || this.phase !== "idle") return false;
+    if (!this._send({ t: "resume", room: s.room, token: s.token })) return false;
     this.phase = "resuming";
-    return this._send({ t: "resume", room: s.room, token: s.token });
+    this.room = String(s.room);                  // 戻れたら、そのあと切れても、自動で再接続できるように覚える(戻れなければ error: resume で消える)
+    this.token = String(s.token);
+    return true;
   }
 
   // ---- 保存(token と部屋コード) ----
@@ -441,6 +444,7 @@ export class NetGameClient {
       players: this.players.map((p) => ({ seat: p.seat, name: p.name })),
       room: this.room ? "<room>" : null,
       hasToken: !!this.token,
+      hasSaved: !!this.savedSession(),
       seq: this.seq,
       view: this.view,
       events: this.events,

@@ -1,7 +1,7 @@
 # JS クライアント(`client-js/netgame/client.js`)
 
 ブラウザ(JS)のゲーム向けの、**通信と状態管理だけ**のクライアント。画面(DOM・canvas)は含まない。依存なし(ESM 1ファイル)。ブラウザと Node 22 以上で動く。
-Python クライアント(`client/netgame/session.py`)と**同じプロトコル(`protocol.md`)の、別実装**。再接続・登録時の扱い・状態の解釈は、2つで同じ振る舞いにしてある(違いは、下の「Python クライアントの v=2」に書いた3点だけ)。同じ解釈をすることは、適合テストで確かめている(下の「適合テスト」)。
+Python クライアント(`client/netgame/session.py`)と**同じプロトコル(`protocol.md`)の、別実装**。再接続・保存・`leave()`・登録時の扱い・状態の解釈は、2つで同じ振る舞いにしてある(違いは、下の「Python クライアントの v=2」に書いた1点だけ)。同じ解釈をすることは、適合テストで確かめている(下の「適合テスト」)。
 
 対応: v=1(realtime / turns)も v=2(authoritative・再接続)も扱える。新しいゲームは、v=2 の authoritative を勧める(隠し情報を守れ、再接続できる)。
 
@@ -67,12 +67,14 @@ net.close();                                 // 接続だけ閉じる(猶予の�
 ## Python クライアントの v=2
 `NetSession(transport, game, version=2)`(`client/netgame/session.py`。画面部品 `flow.py` は v1 だけを使う)。**JS 版 `NetGameClient` と同じ振る舞い**。
 ```python
-sess = NetSession(make_transport(), "awase", version=2)    # reconnect=False で自動再接続を止める / transport_factory=… で新しい接続の作りかたを変える
+sess = NetSession(make_transport(), "awase", version=2,    # reconnect=False で自動再接続を止める / transport_factory=… で新しい接続の作りかたを変える
+                  storage=WebStorage())                    # token と部屋コードの保存先(ブラウザ。PC は dict など。省略するとメモリだけ)
 sess.start()
 # 毎フレーム sess.update()(受信・時間の経過・再接続がここで進む)。state が "idle" になったら:
-if not sess.resume(room, token):                    # 保存しておいた部屋コード + token があれば、戻る
+if not sess.resume():                               # 保存した(なければいまの)部屋コード + token で戻る。sess.resume(room, token) と渡してもよい
     sess.register("ゲスト", mode="random")          # 友だち: mode="friend"(room なし = 作る / room あり = 入る)
 sess.act({"type": "play", "card": 3})               # authoritative の手。送れたら True(再接続のあいだは False)
+sess.leave()                                        # 部屋を出る(すぐ退出。保存も消す)。state は "idle" に戻り、登録しなおせる
 for seq, view, events, resync in sess.take_views(): ...      # 届いた state(resync なら、アニメーションせず置き換える)
 ```
 - **自動再接続**(JS 版と同じ): 通信が途切れたら、`status` が `"reconnecting"` になり(`state` は切れる前のまま)、待ち時間(`min_ms` 1秒から `max_ms` 10秒まで×1.3ずつ、±25% のゆらぎ)のあとに新しい接続を開く。新しい接続の `hello` が届くと `resume` を送り、戻れたら `resync` の `state` が届く。
@@ -82,15 +84,14 @@ for seq, view, events, resync in sess.take_views(): ...      # 届いた state(r
   - 設定: `reconnect={"min_ms":…, "max_ms":…, "factor":…, "give_up_ms":…}`(一部だけでよい)。`False` で無効。`close()` のあとは、再接続しない。部屋に入る前(token も部屋コードもない)に切れたときは、再接続せず `"closed"`(`error == "lost"`)。
   - 時計は、`NetSession(..., clock=…)` で差し替えられる(テスト用)。
 - **登録時の扱い**(JS 版と同じ): 名前は整えて(制御文字を除き、前後の空白を削り、上限の文字数に切る)、空なら送らない。**合言葉と部屋コードは検査せず、そのまま送る**。形・要否はゲームの設定(`rooms`)しだいなので、サーバーが検査して、`error`(`key` / `room` / `pass` など)で返す。そのとき `state` は `"idle"` に戻り、`notice` に理由が入り、`errors` にも残る(やり直せる)。v=1 は、これまで通り、送る前に検査する。
-- **まだ違うところ**(JS 版にあって Python 版にないもの):
-  - token と部屋コードの**保存**(JS 版は `storage`。ページを開き直しても戻れる)。Python 版は、保存先を持たない。呼び出し側が、`sess.token` と `sess.room_code` を保存して、`resume(room, token)` に渡す。
-  - `leave()`(部屋を出る)。Python 版は `close()` で閉じる(猶予のあいだ席が残る)。
-  - `connect()` の Promise(Python 版は `start()` のあと `update()` で `state` が `"idle"` になるのを見る)。
+- **保存**(JS 版と同じ): `storage`(`get(key)` / `storage[key] = value` / `pop(key, None)` が使えるもの。`dict` でよい。ブラウザは `webbridge.WebStorage()`)に、キー `netgame.<game>`、中身 `{"room":…,"token":…}`(JSON)で保存する。**JS 版と同じキー・形式**なので、同じ保存先を共有できる。部屋コードが届いたとき(`waiting` / `match` / `resumed`)に保存し、`leave()` と、戻れなかったとき(`error: resume`)に消す。`saved_session()` で読める。`resume()` を引数なしで呼ぶと、いまの値、なければ保存した値で戻る。明示の `resume(room, token)` で戻ったときも、token を覚える(そのあと切れても、自動で再接続できる)。保存先が使えなくても(例外)、通信は止まらない。
+- **`leave()`**(JS 版と同じ): 部屋を出る(すぐ退出。猶予なし。相手がいれば相手の勝ち)。保存した token も消し、`state` は `"idle"`(接続は開いたまま。登録しなおせる)。接続ごと閉じて、猶予のあいだ席を残すなら `close()`。
+- **まだ違うところ**: `connect()` の Promise だけ。Python 版は `start()` のあと `update()` で `state` が `"idle"` になるのを見る(Python のフレームごとの更新に合わせた形)。
 
 ## 適合テスト(`tests/conformance/`)
 2つのクライアントが、同じサーバーの出力を、同じ状態として解釈することの確認。
 
-- `scenario.json`: 手順(接続 → ランダムマッチ → 手 → ルール違反 → スタンプ → チャット → 切断 → resume → 最後まで → **通信が途切れて自動再接続** → **登録の失敗(部屋がない・形の悪い入力)** → 部屋コード対戦 → 猶予切れ → **戻れない**)。
+- `scenario.json`: 手順(接続 → ランダムマッチ → 手 → ルール違反 → スタンプ → チャット → 切断 → resume → 最後まで → 通信が途切れて自動再接続 → 登録の失敗(部屋がない・形の悪い入力) → **保存した token でページを開き直して戻る → `leave()`** → 部屋コード対戦 → 猶予切れ → 戻れない)。
 - `golden.json`: 各ステップのあとの `snapshot()`(JS と Python で同じ形)。
 - JS: `client-js/conformance.test.js`(サーバーの核と同じプロセスで)。Python: `tests/test_conformance.py`(Node の `host.mjs` が動かすサーバーの核に、標準入出力でつなぐ)。どちらも、同じ決定的な世界(`world.mjs`: 固定の乱数・偽の時計)に同じ手順を実行し、golden と一致することを確かめる。
 - 通信の仕様やサーバーの挙動を変えて golden が変わるときは、`UPDATE_GOLDEN=1 npm test` で作り直し、**差分を見て、意図したものか確認する**。

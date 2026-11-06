@@ -223,3 +223,126 @@ def test_status_は_JS版と同じ値():
     w.s.close()
     assert w.s.status == "closed"
     assert json.loads(json.dumps(w.s.snapshot()))["phase"] == "closed"
+
+
+# ---- 保存(token と部屋コード)・leave(): JS 版と同じ ----
+def test_保存_waiting_と_match_で部屋コードが届いたら_JS版と同じ形式で保存される():
+    store = {}
+    w = World(storage=store)
+    w.playing()
+    assert json.loads(store["netgame.cards"]) == {"room": "AB3X", "token": "f" * 32}     # JS 版と同じキーと形式
+    assert w.s.saved_session() == {"room": "AB3X", "token": "f" * 32}
+
+
+def test_保存_部屋コードのないランダムの待機中は保存しない_storage_なしでも動く():
+    store = {}
+    w = World(storage=store)
+    w.hello()
+    assert w.s.register("あ", mode="random")
+    w.t.recv(t="registered", id="AAAA-BBBB", name="あ", token="a" * 32)
+    w.t.recv(t="waiting")
+    w.s.update()
+    assert store == {} and w.s.saved_session() is None
+    w2 = World()                                            # storage なし
+    w2.playing()
+    assert w2.s.saved_session() is None
+
+
+def test_保存_ページを開き直した想定で_resume_を引数なしで呼ぶと_保存した値で戻る():
+    store = {"netgame.cards": json.dumps({"room": "QW7K", "token": "c" * 32})}
+    w = World(storage=store)
+    w.hello()
+    assert w.s.resume()
+    assert w.t.msgs()[-1] == {"t": "resume", "room": "QW7K", "token": "c" * 32}
+    assert (w.s.state, w.s.room_code, w.s.token) == ("resuming", "QW7K", "c" * 32)
+
+
+def test_保存_resume_の優先順位は_引数_いまの値_保存した値():
+    store = {"netgame.cards": json.dumps({"room": "SAVE", "token": "s" * 32})}
+    w = World(storage=store)
+    w.hello()
+    assert w.s.resume("ARG1", "t" * 32)
+    assert w.t.msgs()[-1]["room"] == "ARG1"
+    w2 = World(storage=store)
+    w2.playing()
+    w2.t.recv(t="error", code="rule")
+    w2.s.update()
+    w2.s.state = "idle"                                      # いまの値(AB3X)が、保存した値より先
+    assert w2.s.resume()
+    assert w2.t.msgs()[-1]["room"] == "AB3X"
+
+
+def test_明示の_resume_で戻ったら_token_を覚えて_そのあと切れても自動で再接続できる():
+    w = World()
+    w.hello()
+    assert w.s.resume("AB3X", "f" * 32)
+    w.t.recv(t="resumed", id="X", you=0, room="AB3X", status="playing", mode="authoritative", settings={}, seed=1,
+             players=[{"seat": 0, "name": "あ"}, {"seat": 1, "name": "い"}])
+    w.t.recv(t="state", seq=2, view={"hand": [1]}, events=[], resync=True)
+    w.s.update()
+    assert (w.s.state, w.s.token, w.s.room_code) == ("playing", "f" * 32, "AB3X")
+    w.lose_connection()
+    assert w.s.status == "reconnecting"
+
+
+def test_保存_戻れなかったら保存も消える_保存先が壊れていても動く():
+    store = {"netgame.cards": json.dumps({"room": "AB3X", "token": "f" * 32})}
+    w = World(storage=store)
+    w.hello()
+    assert w.s.resume()
+    w.t.recv(t="error", code="resume")
+    w.s.update()
+    assert "netgame.cards" not in store and w.s.saved_session() is None
+
+    class Broken(dict):
+        def get(self, *a):
+            raise RuntimeError("壊れた保存先")
+
+        def __setitem__(self, *a):
+            raise RuntimeError("壊れた保存先")
+
+        def pop(self, *a):
+            raise RuntimeError("壊れた保存先")
+
+    w2 = World(storage=Broken())
+    w2.playing()                                             # 例外は、通信を止めない
+    assert w2.s.state == "playing" and w2.s.saved_session() is None
+    w2.s.leave()
+
+
+def test_leave_は_すぐ退出_保存も消し_state_は_idle_で登録しなおせる():
+    store = {}
+    w = World(storage=store)
+    w.playing()
+    assert store
+    assert w.s.leave() is True
+    assert w.t.msgs()[-1] == {"t": "leave"}
+    assert store == {}
+    s = w.s
+    assert (s.state, s.token, s.room_code, s.players, s.view, s.snapshot()["seat"]) == ("idle", "", "", [], None, None)
+    assert s.register("あ", mode="random")
+
+
+def test_leave_は_閉じた接続では_state_を変えない_v1_でも送れる():
+    w = World()
+    w.playing()
+    w.s.close()
+    w.s.leave()
+    assert w.s.state == "closed"
+    t, clock = FakeTransport(), Clock()
+    s = NetSession(t, "duel", clock)
+    t.state, t.opened = "open", True
+    s.state = "waiting"
+    s.leave()
+    assert t.msgs()[-1] == {"t": "leave"} and s.state == "idle"
+
+
+def test_WebStorage_は_ブラウザ以外では何も保存しない_dict_のように使える():
+    from netgame.webbridge import WebStorage
+    st = WebStorage()
+    st["k"] = "v"
+    assert st.get("k") is None and st.get("k", "既定") == "既定"
+    assert st.pop("k", None) is None
+    w = World(storage=st)
+    w.playing()
+    assert w.s.saved_session() is None

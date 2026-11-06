@@ -34,6 +34,12 @@ export async function runScenario() {
   const WS = coreSocketClass(world);
   const clients = new Map();
   const timers = new Map();
+  const stores = new Map();             // 保存先(token と部屋コード)。connect の storage で、同じものを共有する(ページを開き直した想定)
+  const storageFor = (name) => {
+    if (!stores.has(name)) stores.set(name, new Map());
+    const m = stores.get(name);
+    return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k) };
+  };
   const live = new Set();
   const resolve = (who, v) => {
     if (typeof v === "string" && v === "$hand0") return clients.get(who).view.hand[0];
@@ -46,7 +52,7 @@ export async function runScenario() {
     switch (s.do) {
       case "connect": {
         const timer = manualTimer();
-        const n = new NetGameClient({ url: "ws://world/ws", game: scenario.game, v: scenario.v, WebSocket: WS, timer });
+        const n = new NetGameClient({ url: "ws://world/ws", game: scenario.game, v: scenario.v, WebSocket: WS, timer, storage: storageFor(s.storage ?? s.who) });
         clients.set(s.who, n); timers.set(s.who, timer); live.add(s.who);
         await n.connect();
         break;
@@ -65,6 +71,8 @@ export async function runScenario() {
         timers.get(s.who).fire();
         for (let k = 0; k < 50 && !(c.status === "open" && !["resuming", "connecting"].includes(c.phase)); k++) await settle(clients);
         break;
+      case "resumeSaved": assert.ok(c.resume()); break;
+      case "leave": c.leave(); break;
       case "resume": { const f = clients.get(s.from); c.resume({ room: f.room, token: f.token }); break; }
       case "playAll":
         for (const n of [...c.view.hand]) { c.act({ type: "play", n }); await settle(clients); }

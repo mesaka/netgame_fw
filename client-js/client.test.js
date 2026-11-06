@@ -219,3 +219,19 @@ test("登録: 名前が空なら送らない。合言葉・部屋コードは検
   assert.deepEqual(c.errors, ["room"]);
   assert.equal(c.registerFriend({ name: "あ" }), true);
 });
+
+test("明示の resume({room, token}) で戻ったら、token を覚えて、そのあと切れても自動で再接続できる", async () => {
+  const e = env();
+  const [a, b] = await e.pair();
+  const { room, token } = a;
+  a.close();
+  const a2 = e.make({ storage: null });
+  await a2.connect();
+  assert.ok(a2.resume({ room, token }));
+  await until(() => a2.phase === "playing" && a2.view);
+  assert.equal(a2.token, token);
+  a2._ws._drop();
+  await until(() => a2.status === "reconnecting");
+  await until(() => a2.status === "open" && a2.phase === "playing");
+  assert.equal(a2.seat, 0);
+});
