@@ -11,7 +11,7 @@
 // いまは、組み合わせも部屋も、1つの Durable Object(Hub)で動かす。部屋の記録は、その DO のストレージ(kv)に置く。
 // (部屋ごとの Durable Object に分けるのは、規模が必要になってから。docs/design.md 3.3)
 import { DurableObject } from "cloudflare:workers";
-import { NetGameCore } from "./core.js";
+import { NetGameCore, hashClientKey } from "./core.js";
 
 export function createGameWorker(games, { binding = "HUB", instance = "main" } = {}) {
   class Hub extends DurableObject {
@@ -31,13 +31,17 @@ export function createGameWorker(games, { binding = "HUB", instance = "main" } =
 
     async fetch(request) {
       const url = new URL(request.url);
+      // clientKey: 接続元の見分け(入室失敗の制限 rooms.joinLimit 用)。Cloudflare が付ける接続元 IP を、サーバー側だけが持つ salt でハッシュにしたもの
+      // (生の IP は、保存しない)。入室失敗の記録は、最後の失敗から1時間で消える。非同期の計算は、接続を受け付ける前に済ませる。
+      let salt = this.ctx.storage.kv.get("salt");
+      if (!salt) { salt = crypto.randomUUID(); this.ctx.storage.kv.put("salt", salt); }
+      const clientKey = await hashClientKey(request.headers.get("CF-Connecting-IP"), salt);
       const pair = new WebSocketPair();
       const [client, server] = Object.values(pair);
       this.ctx.acceptWebSocket(server);
-      // clientKey: 接続元の見分け(入室失敗の制限 rooms.joinLimit 用)。Cloudflare が付ける接続元 IP
       this.core.onOpen(server, {
         game: url.searchParams.get("game"), v: url.searchParams.get("v") ?? undefined,
-        clientKey: request.headers.get("CF-Connecting-IP") ?? undefined,
+        clientKey,
       });
       return new Response(null, { status: 101, webSocket: client });
     }
