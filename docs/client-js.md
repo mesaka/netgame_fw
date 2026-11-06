@@ -6,6 +6,12 @@ Python クライアント(`client/netgame/session.py`)と**同じプロトコル
 対応: v=1(realtime / turns)も v=2(authoritative・再接続)も扱える。新しいゲームは、v=2 の authoritative を勧める(隠し情報を守れ、再接続できる)。
 
 ## 取り込む
+サーバー(Workers)とクライアントを、いっしょにコピーする(Cloudflare Workers のブラウザゲーム向け):
+```
+bash tools/copy_to_js_game.sh <ゲームのリポジトリ> src/netgame public/js/netgame
+#   サーバー側 = core.js / worker.js / text.js / testkit.js(テスト用)  クライアント側 = client.js
+```
+クライアントだけなら:
 ```
 bash tools/copy_js_client.sh <ゲームのフォルダ>/js/netgame      # client.js / LICENSE / NOTICE / SOURCE_COMMIT がコピーされる
 ```
